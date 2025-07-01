@@ -6,69 +6,23 @@ author_profile: true
 ---
 
 
-# Executive Summary
+# MPAID Project Summary
+
 
 ## Overview 
 
-The US Census Bureau has categorized the 50 states and District of Columbia into 4 distinct regions. Those regions are further divided into 9 districts. For the purposes of this report, we are focusing on the following districts:
-
--   Mountain Division
--   Pacific Division
--   South Atlantic Division
-
-We examined the impact of two federally funded tax programs, the New Markets Tax Program and the Low Income Housing Tax Credit program on qualifying neighborhoods. In order to evaluate the change in neighborhoods,we will be looking at Social Variability Index (SVI) Census variables which are defined by U.S. Centers for Disease Control and Prevention (CDC)’s to measure neighborhood vulnerability. In addition, we will also be looking at economic outcomes variables to include: median home values and median income from Census data, and the Federal Housing Finance Agency’s house price index.
-
-The purpose of the federally funded New Markets Tax Credits and Low Income Housing Tax credits is to provide low-income neighborhoods investment funding to improve vulnerable neighborhoods.
-
-The CDC’s SVI looks at 4 categories of vulnerability. All variables within these categories can be pulled from Census Data API.
-
-We will also be including the following economic variables in our analysis: Median Home Values, Median Incomes, and House Price Index.
-
-We will look at these variables in vulnerable neighborhoods who received investment from the NMTC and LIHTC programs and compare them with neighborhoods who did not receive funding from these programs. Specifically we will be looking at 2010 and 2020 Census data for these neighborhoods. It is our hypothesis that those neighborhoods who received NMTC and LIHTC funding will have decreased SVI vulnerability flags and improved economic outcomes.
 
 
 ## Data
 
-Data for this project was sourced from the U.S. Census Bureau (2010 and 2020) and the Federal Housing Finance Agency, with all 2020 data normalized to 2010 census tract boundaries using NHGIS crosswalks.
-
-Social Vulnerability Index data was based on CDC-defined categories:
-
-- Socioeconomic Status (SES):  percent living below 150% poverty, percent unemployed, population housing cost-burned, percent adults without high school diploma, percent without health insurance.
-- Household Characteristics: percent age 17 and under, percent age 65 and over, percent disabled civilians, percent single parent families, percent limited English speakers.
-- Racial/Ethnic Minority Status: percent minority race/ethnicity.
-- Housing Type/Transportation: percent in multi-unit housing, percent in mobile housing, percent in crowded living spaces, percent with no vehicle access, percent living in group quarters.
-
-Additional variables included median income, median home values, and the House Price Index. Median income and median home values were pulled from the census API. The house price index was pulled from the Federal Housing Finance Agency API.
-
-We identified tracts that were eligible for our two tax programs; the New Markets Tax Credit (NMTC), and the Low Income Housing Tax Credit (LIHTC). We wrangled our data to determine tracts that were deemed eligible for these tax credits, but excluded tracts that received funding prior to 2010, to insure that we are measuring the impact of the programs.
-
-The analysis covered 73,057 tracts nationally, with 5,250 in the Mountain Division, 13,706 in the South Atlantic Division, and 10,867 in the Pacific Division. Eligibility and funding data for NMTC and LIHTC were integrated to isolate program impacts post-2010, focusing on new interventions and avoiding pre-existing funded tracts.
 
 ## Methods
 
-A variety of spatial and statistical techniques were used to analyze the impact of tax credit investments.
 
-These included:
-
-- waffle charts
-- choropleth and bivariate mapping
-- k-means clustering
-
-Each was used to  visualize funding distribution and vulnerability in various ways and groupings. 
-
-Correlation analyses (Pearson’s r) assessed alignment between funding levels and tract need. 
-
-To estimate causal impacts, difference-in-differences (diff-in-diff) regression models were used, controlling for metro-level effects via CBSA fixed effects. This approach allowed for comparisons of change over time between treated (funded) and untreated tracts in both divisions, across multiple outcome variables.
 
 # Results and Conclusion
 
-In the Mountain, Pacific, and South Atlantic Divisions, the NMTC and LIHTC programs did not produce statistically significant improvements in any of the four social vulnerability categories or most economic indicators.
 
-A moderate to strong correlation was observed between funding and vulnerability in the Mountain Division, suggesting relatively effective targeting; however, actual program impacts were negligible.
-
-In the South Atlantic Division, funding did not consistently align with areas of highest need, and difference-in-differences models showed no significant outcomes except for a small positive impact of NMTC on median income.
-
-Overall, neither program demonstrated clear effectiveness in reducing social vulnerability or driving economic improvements over the decade studied.
 
 
 <br>
@@ -80,14 +34,8 @@ Overall, neither program demonstrated clear effectiveness in reducing social vul
 
 ## R Versions
 
-Dodson: Analyses were conducted using the R Statistical language (version 4.4.0;
-R Core Team, 2024) on Windows 10 x64 (build 19045)
-
-Knopp: Analyses were conducted using the R Statistical language (version 4.4.1;
+Analyses were conducted using the R Statistical language (version 4.4.1;
 R Core Team, 2024) on Windows 11 x64 (build 26100)
-
-Radovich: Analyses were conducted using the R Statistical language (version 4.3.1; R Core Team,
-2023) on Windows 11 x64 (build 26100)
 
 ## R Packages
 
@@ -232,76 +180,11 @@ Radovich: Analyses were conducted using the R Statistical language (version 4.3.
 
 ## Data
 
-- CDFI Fund (2023). *FY 2023 NMTC Public Data Release: 2003-2021 Data
-  File Updated - Aug 21, 2023*.
-  <https://www.cdfifund.gov/documents/data-releases>
 
-- Centers for Disease Control and Prevention/ Agency for Toxic
-  Substances and Disease Registry/ Geospatial Research, Analysis, and
-  Services Program. (2022). *CDC/ATSDR Social Vulnerability Index 2020
-  Methodology*.
-  <https://web.archive.org/web/20241028180954/https://www.atsdr.cdc.gov/placeandhealth/svi/documentation/SVI_documentation_2020.html>
-
-- FHFA (n.d.). *HPI® Census Tracts (Developmental Index; Not Seasonally
-  Adjusted)*.
-  <https://www.fhfa.gov/DataTools/Downloads/Pages/House-Price-Index-Datasets.aspx#atvol>
-
-- HUD User (n.d.). *2010, 2011, and 2012 QCT data for all of the census
-  tracts in the United States and Puerto Rico
-  (qct_data_2010_2011_2012.xlsx)*.
-  <https://www.huduser.gov/portal/datasets/qct.html#year2010>
-
-- HUD User (2023). *Low-Income Housing Tax Credit (LIHTC): Property
-  Level Data*.
-  <https://www.huduser.gov/portal/datasets/lihtc/property.html>
-
-- Novogradac New Markets Tax Credit Resource Center. (2017). *New
-  Markets Tax Credit Low-Income Community Census Tracts - American
-  Community Survey 2011-2015*.
-  <https://www.novoco.com/resource-centers/new-markets-tax-credits/data-tables>
-
-- Steven Manson, Jonathan Schroeder, David Van Riper, Katherine Knowles,
-  Tracy Kugler, Finn Roberts, and Steven Ruggles. *IPUMS National
-  Historical Geographic Information System: Version 18.0 \[2020 → 2010
-  Block Groups → Census Tracts Crosswalks National File\]*. Minneapolis,
-  MN: IPUMS. 2023. <http://doi.org/10.18128/D050.V18.0>
-
-- U.S. Bureau of Labor Statistics (n.d.). *CPI Inflation Calculator*.
-  <https://data.bls.gov/cgi-bin/cpicalc.pl>
-
-- U.S. Bureau of Labor Statistics (n.d.). *QCEW County-MSA-CSA Crosswalk
-  (For NAICS-Based Data)*.
-  <https://www.bls.gov/cew/classifications/areas/county-msa-csa-crosswalk.htm>
-
-- U.S. Census Bureau. (2011). *2006-2010 American Community Survey
-  5-year*.
-  <https://www.census.gov/newsroom/releases/archives/american_community_survey_acs/cb11-208.html>
-
-- U.S. Census Bureau. (2013). *2008-2012 American Community Survey
-  5-year*.
-  <https://www.census.gov/newsroom/press-kits/2013/20131217_acs_5yr.html>
-
-- U.S. Census Bureau. (2022). *2016-2020 American Community Survey
-  5-year*.
-  <https://www.census.gov/newsroom/press-releases/2022/acs-5-year-estimates.html>
 
 ## Readings
 
-- Jayachandran, A. (2024). What Is House Price Index (HPI)?
-  <https://www.wallstreetmojo.com/house-price-index-hpi/>
 
-- Killingsworth, M. A. (2021). Experienced well-being rises with income,
-  even above \$75,000 per year. Proceedings of the National Academy of
-  Sciences - PNAS, 118(4).
-  <https://doi.org/10.1073/pnas.2016976118_download>
-
-- Tax Foundation (2020). An Overview of the Low-Income Housing Tax
-  Credit (LIHTC)
-  <https://taxfoundation.org/research/all/federal/low-income-housing-tax-credit-lihtc/>
-
-- The Urban Institute (2021). The Past, Present, and Future of the New
-  Markets Tax Credit Program
-  <https://www.urban.org/events/past-present-and-future-new-markets-tax-credit-program>
 
   ## License
 
