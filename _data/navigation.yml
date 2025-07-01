@@ -2,12 +2,12 @@
 main:
   - title: "Introduction"
     url: index
-  - title: "Evaluation Report"
-    url: /evaluation_report/
-  - title: "Team"
+  - title: "Members"
     url: /docs/about_team/
-  - title: "Repository"
-    url: https://github.com/Watts-College/project-paf-515-2025s-team-04
+  - title: "Shiny Dashboard"
+    url: "https://runknopp.shinyapps.io/USArrestDashboard/"
+    - title: "Evaluation Report"
+    url: /evaluation_report/
 
 sidebar:
   - title: Mountain Division
