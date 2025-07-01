@@ -16,11 +16,11 @@ minimal_mistakes_skin    : "air" # "default", "aqua", "contrast", "dark", "dirt"
 
 # Site Settings
 locale                   : "en-US"
-title                    : "The NMTC & LIHTC Programs and Community Social Vulnerability"
+title                    : "The Montana Police Agency Insights Dashboard"
 title_separator          : "-"
-subtitle                 : "An evaluation of the effectiveness of federal programs in the United States"
-name                     : "PAF 515 Spring 2025 Team 04"
-description              : "PAF 515 Final Project Website"
+subtitle                 : "An employment and wage dashboard for Montana's police agencies"
+name                     : "MPAID"
+description              : "An employment and wage dashboard for Montana's police agencies. This dashboard provides insights into the employment and wage trends of police agencies across Montana, helping to inform employment and Collective bargaining agreements."
 url                      : # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : # the subpath of your site, e.g. "/blog"
 repository               : # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
@@ -104,9 +104,9 @@ analytics:
 
 # Site Author
 author:
-  name             : #"Kenaniah Dodson, Drew Radovich, Michelle Knopp"
-  avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
-  bio              : "Report Date: 05/10/2025"
+  name             : #"Michelle Knopp"
+  avatar           : "/images/asu.png"
+  bio              : "PAF 593: Applied Project Summer 2025"
   location         : "Arizona State University"
   email            :
   links:
@@ -124,7 +124,7 @@ author:
       # url: "https://facebook.com/"
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
-      # url: "https://github.com/Watts-College/project-paf-515-2025s-team-04"
+      # url: "https://github.com/MichelleAnn117"
     - label: "Instagram"
       icon: "fab fa-fw fa-instagram"
       # url: "https://instagram.com/"
@@ -140,7 +140,7 @@ footer:
       # url:
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
-      url: "https://github.com/Watts-College/project-paf-515-2025s-team-04"
+      url: "https://github.com/MichelleAnn117"
     - label: "GitLab"
       icon: "fab fa-fw fa-gitlab"
       # url:
