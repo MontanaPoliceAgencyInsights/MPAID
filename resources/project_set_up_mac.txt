@@ -1,0 +1,26 @@
+Project Set-Up Mac
+
+A) Set-Up renv for unique R environment for project
+
+utils::install.packages("renv")
+renv::init()
+renv::snapshot()
+
+
+B) Set-Up Devtools 
+   
+  1) Ensure that you can compile packages
+     See tutorial: https://clanfear.github.io/CSSS508/docs/compiling.html
+     More technical version: https://thecoatlessprofessor.com/programming/cpp/r-compiler-tools-for-rcpp-on-macos/
+   
+  2) Install devtools (if you haven't already)
+      utils::install.packages("devtools")
+      
+C) Install here package
+utils::install.packages("here")
+
+D) Install tidyverse
+utils::install.packages("tidyverse")
+
+E) Install pdftools
+utils::install.packages("pdftools")

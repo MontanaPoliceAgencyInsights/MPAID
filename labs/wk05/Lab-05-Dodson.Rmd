@@ -1,0 +1,976 @@
+---
+title: "Lab-05-Dodson"
+author: "Kenaniah Dodson"
+date: "2025-04-28"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+    preserve_yaml: true
+  rmdformats::downcute:
+    toc_depth: 3
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: "tango"
+    code_folding: show
+always_allow_html: true
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_format = "all") })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Library
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+library(here)         # relative filepaths for reproducibility
+library(rio)          # read excel file from URL
+library(tidyverse)    # data wrangling
+library(stringi)      # string data wrangling
+library(tidycensus)   # US census data
+library(ggplot2)      # data visualization
+library(kableExtra)   # table formatting
+library(scales)       # palette and number formatting
+library(unhcrthemes)  # data visualization themes
+library(ggrepel)      # data visualization formatting to avoid overlapping
+library(rcompanion)   # data visualization of variable distribution
+library(ggpubr)       # data visualization of variable distribution
+library(moments)      # measures of skewness and kurtosis
+library(tinytable)    # format regression tables
+library(modelsummary) # format regression tables
+```
+
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+import::here( "fips_census_regions",
+              "load_svi_data",
+              "merge_svi_data",
+              "census_division",
+              "slopegraph_plot",
+              "census_pull",
+             # notice the use of here::here() that points to the .R file
+             # where all these R objects are created
+             .from = here::here("analysis/project_data_steps_dodson.R"),
+             .character_only = TRUE)
+```
+
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Load API key, assign to TidyCensus Package
+source(here::here("analysis/password.R"))
+census_api_key(census_api_key)
+```
+
+
+# Data
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Load NMTC AND LIHTC data sets
+
+svi_divisional_nmtc <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_divisional_nmtc.rds")))
+
+svi_national_nmtc <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_national_nmtc.rds")))
+
+svi_divisional_lihtc <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_divisional_lihtc.rds")))
+
+svi_national_lihtc <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_national_lihtc.rds")))
+```
+
+
+## House Price Index Data
+
+```{r, warning=FALSE, message=FALSE}
+hpi_df <- read.csv("https://r-class.github.io/paf-515-course-materials/data/raw/HPI/HPI_AT_BDL_tract.csv")
+
+hpi_df_10_20 <- hpi_df %>% 
+  mutate(GEOID10 = str_pad(tract, 11, "left", pad=0)) %>% 
+  filter(year %in% c(2010, 2020))  %>%
+ select(GEOID10, state_abbr, year, hpi) %>%
+  pivot_wider(names_from = year, values_from = hpi) %>%
+  mutate(housing_price_index10 = `2010`,
+         housing_price_index20 = `2020`) %>%
+  select(GEOID10, state_abbr, housing_price_index10, housing_price_index20)
+
+# View data
+hpi_df_10_20 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Drop state_abbr column for joining
+hpi_df_10_20 <- hpi_df_10_20 %>% select(-state_abbr)
+```
+
+## CBSA Crosswalk
+
+
+```{r, warning=FALSE, message=FALSE}
+msa_csa_crosswalk <- rio::import("https://r-class.github.io/paf-515-course-materials/data/raw/CSA_MSA_Crosswalk/qcew-county-msa-csa-crosswalk.xlsx", which=4)
+
+msa_csa_crosswalk <- msa_csa_crosswalk %>% 
+  mutate(county_fips = str_pad(`County Code`, 5, "left", pad=0),
+         cbsa = coalesce(`CSA Title`, `MSA Title`),
+         cbsa_code = coalesce(`CSA Code`, `MSA Code`),
+         county_title = `County Title`)  %>% 
+  select(county_fips, county_title, cbsa, cbsa_code)
+
+msa_csa_crosswalk %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+## Census Data
+
+```{r, warning=FALSE, message=FALSE}
+states <- list(svi_national_nmtc$state %>% unique())
+states 
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+census_pull10 <- lapply(states, census_pull, yr = 2010)
+
+census_pull10_df <- census_pull10[[1]] %>%  
+  # Drop margin of error column
+  select(-moe) %>%
+  # Add suffix to variable names
+  mutate(variable = paste0(variable, "_10")) %>%
+  # Pivot data frame
+  pivot_wider(
+    names_from = variable,
+    values_from = c(estimate)
+  )
+
+census_pull10_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+census_pull19 <- lapply(states, census_pull, yr = 2019)
+
+census_pull19_df <- census_pull19[[1]] %>% 
+  # Select columns
+  select(GEOID, NAME, variable, estimate, moe) %>% 
+  # Create individual FIPS columns for state, county, and tract
+  mutate(FIPS_st = substr(GEOID, 1, 2),
+         FIPS_county = substr(GEOID, 3, 5),
+         FIPS_tract = substr(GEOID, 6, 11)) %>%
+# Los Angeles, CA Census Tract fixes
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "037" & FIPS_st == "06" & FIPS_tract == "137000"), "930401", FIPS_tract )) %>%
+# Pima County, AZ Census Tract fixes
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "002704"), "002701", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "002906"), "002903", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "004118"), "410501", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "004121"), "410502", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "004125"), "410503", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "005200"), "470400", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "019" & FIPS_st == "04" & FIPS_tract == "005300"), "470500", FIPS_tract2 )) %>%
+# Madison County, NY Census Tract fixes
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030101"), "940101", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030102"), "940102", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030103"), "940103", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030200"), "940200", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030300"), "940300", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030401"), "940401", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030403"), "940403", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030600"), "940600", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "053" & FIPS_st == "36" & FIPS_tract == "030402"), "940700", FIPS_tract2 )) %>%
+# Oneida County, NY Census Tract fixes
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "065" & FIPS_st == "36" & FIPS_tract == "024800"), "940000", FIPS_tract2 )) %>% 
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "065" & FIPS_st == "36" & FIPS_tract == "024700"), "940100", FIPS_tract2 )) %>%
+                      mutate(FIPS_tract2 = if_else((FIPS_county == "065" & FIPS_st == "36" & FIPS_tract == "024900"), "940200", FIPS_tract2 )) %>%  
+                      # Move columns in data set
+                      relocate(c(FIPS_st, FIPS_county, FIPS_tract, FIPS_tract2),.after = GEOID) %>%
+                      # Create new GEOID column
+                      mutate(GEOID = paste0(FIPS_st, FIPS_county, FIPS_tract2)) %>% 
+                      # Drop newly created FIPS columns and margin of error
+                      select(-FIPS_st, -FIPS_county, -FIPS_tract, -FIPS_tract2, -moe) %>% 
+                      # Add suffix
+                      mutate(variable = paste0(variable, "_19")) %>%
+                      # Pivot data set
+                      pivot_wider(
+                        names_from = variable,
+                        values_from = c(estimate)
+                      ) 
+
+census_pull19_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+inflation_adj = 1.16
+
+# Join 2010 and 2019 Median Income and Home Value Data
+census_pull_df <- left_join(census_pull10_df, census_pull19_df[c("GEOID", "Median_Income_19", "Median_Home_Value_19")], join_by("GEOID" == "GEOID"))
+
+# Create new inflation adjusted columns for 2010 median income and median home value, find changes over time
+census_pull_df <- census_pull_df %>% 
+                   mutate(Median_Income_10adj = Median_Income_10*inflation_adj,
+                          Median_Home_Value_10adj = Median_Home_Value_10*inflation_adj,
+                          Median_Income_Change = Median_Income_19 - Median_Income_10adj,
+                          Median_Income_Change_pct = (Median_Income_19 - Median_Income_10adj)/Median_Income_10adj,
+                          Median_Home_Value_Change = Median_Home_Value_19 - Median_Home_Value_10adj,
+                          Median_Home_Value_Change_pct = (Median_Home_Value_19 - Median_Home_Value_10adj)/Median_Home_Value_10adj)
+
+# View data
+census_pull_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+# NMTC Data
+
+```{r, warning=FALSE, message=FALSE}
+svi_divisional_nmtc_df0 <- left_join(svi_divisional_nmtc, census_pull_df, join_by("GEOID_2010_trt" == "GEOID"))
+
+svi_divisional_nmtc_df1 <- left_join(svi_divisional_nmtc_df0, hpi_df_10_20, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+                          unite("county_fips", FIPS_st, FIPS_county, sep = "") 
+
+svi_divisional_nmtc_df <- left_join(svi_divisional_nmtc_df1, msa_csa_crosswalk, join_by("county_fips" == "county_fips"))
+
+svi_divisional_nmtc_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+svi_national_nmtc_df0 <- left_join(svi_national_nmtc, census_pull_df, join_by("GEOID_2010_trt" == "GEOID"))
+
+svi_national_nmtc_df1 <- left_join(svi_national_nmtc_df0, hpi_df_10_20, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+                          unite("county_fips", FIPS_st, FIPS_county, sep = "") 
+
+svi_national_nmtc_df <- left_join(svi_national_nmtc_df1, msa_csa_crosswalk, join_by("county_fips" == "county_fips"))
+
+svi_national_nmtc_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+# LIHTC
+
+```{r, warning=FALSE, message=FALSE}
+svi_divisional_lihtc_df0 <- left_join(svi_divisional_lihtc, census_pull_df, join_by("GEOID_2010_trt" == "GEOID"))
+
+svi_divisional_lihtc_df1 <- left_join(svi_divisional_lihtc_df0, hpi_df_10_20, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+                          unite("county_fips", FIPS_st, FIPS_county, sep = "") 
+
+svi_divisional_lihtc_df <- left_join(svi_divisional_lihtc_df1, msa_csa_crosswalk, join_by("county_fips" == "county_fips"))
+
+svi_divisional_lihtc_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+svi_national_lihtc_df0 <- left_join(svi_national_lihtc, census_pull_df, join_by("GEOID_2010_trt" == "GEOID"))
+
+svi_national_lihtc_df1 <- left_join(svi_national_lihtc_df0, hpi_df_10_20, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+                          unite("county_fips", FIPS_st, FIPS_county, sep = "") 
+
+svi_national_lihtc_df <- left_join(svi_national_lihtc_df1, msa_csa_crosswalk, join_by("county_fips" == "county_fips"))
+
+svi_national_lihtc_df %>% head(10) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+# Log NMTC and LIHTC Variables
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+svi_national_nmtc_df$Median_Income_10adj_log <- log(svi_national_nmtc_df$Median_Income_10adj)
+svi_national_nmtc_df$Median_Income_19_log <- log(svi_national_nmtc_df$Median_Income_19)
+
+svi_national_nmtc_df$Median_Home_Value_10adj_log = log(svi_national_nmtc_df$Median_Home_Value_10adj)
+svi_national_nmtc_df$Median_Home_Value_19_log = log(svi_national_nmtc_df$Median_Home_Value_19)
+
+svi_national_nmtc_df$housing_price_index10_log = log(svi_national_nmtc_df$housing_price_index10)
+svi_national_nmtc_df$housing_price_index20_log = log(svi_national_nmtc_df$housing_price_index20)
+
+svi_divisional_nmtc_df$Median_Income_10adj_log <- log(svi_divisional_nmtc_df$Median_Income_10adj)
+svi_divisional_nmtc_df$Median_Income_19_log <- log(svi_divisional_nmtc_df$Median_Income_19)
+
+svi_divisional_nmtc_df$Median_Home_Value_10adj_log = log(svi_divisional_nmtc_df$Median_Home_Value_10adj)
+svi_divisional_nmtc_df$Median_Home_Value_19_log = log(svi_divisional_nmtc_df$Median_Home_Value_19)
+
+svi_divisional_nmtc_df$housing_price_index10_log = log(svi_divisional_nmtc_df$housing_price_index10)
+svi_divisional_nmtc_df$housing_price_index20_log = log(svi_divisional_nmtc_df$housing_price_index20)
+
+svi_national_lihtc_df$Median_Income_10adj_log <- log(svi_national_lihtc_df$Median_Income_10adj)
+svi_national_lihtc_df$Median_Income_19_log <- log(svi_national_lihtc_df$Median_Income_19)
+
+svi_national_lihtc_df$Median_Home_Value_10adj_log = log(svi_national_lihtc_df$Median_Home_Value_10adj)
+svi_national_lihtc_df$Median_Home_Value_19_log = log(svi_national_lihtc_df$Median_Home_Value_19)
+
+svi_national_lihtc_df$housing_price_index10_log = log(svi_national_lihtc_df$housing_price_index10)
+svi_national_lihtc_df$housing_price_index20_log = log(svi_national_lihtc_df$housing_price_index20)
+
+svi_divisional_lihtc_df$Median_Income_10adj_log <- log(svi_divisional_lihtc_df$Median_Income_10adj)
+svi_divisional_lihtc_df$Median_Income_19_log <- log(svi_divisional_lihtc_df$Median_Income_19)
+
+svi_divisional_lihtc_df$Median_Home_Value_10adj_log = log(svi_divisional_lihtc_df$Median_Home_Value_10adj)
+svi_divisional_lihtc_df$Median_Home_Value_19_log = log(svi_divisional_lihtc_df$Median_Home_Value_19)
+
+svi_divisional_lihtc_df$housing_price_index10_log = log(svi_divisional_lihtc_df$housing_price_index10)
+svi_divisional_lihtc_df$housing_price_index20_log = log(svi_divisional_lihtc_df$housing_price_index20)
+```
+
+
+# Diff-in-Diff Models
+
+## NMTC Evaluation
+
+### National SVI
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2010 df, create post variable and set to 0, create year variable and set to 2010
+nmtc_did10_usa_svi <- svi_national_nmtc_df %>% 
+  select(GEOID_2010_trt, cbsa, F_THEME1_10, F_THEME2_10, F_THEME3_10, F_THEME4_10, F_TOTAL_10, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "SVI_FLAG_COUNT_SES" = "F_THEME1_10",
+         "SVI_FLAG_COUNT_HHCHAR" = "F_THEME2_10",
+         "SVI_FLAG_COUNT_REM" = "F_THEME3_10",
+         "SVI_FLAG_COUNT_HOUSETRANSPT" = "F_THEME4_10",
+         "SVI_FLAG_COUNT_OVERALL" = "F_TOTAL_10") 
+
+nrow(nmtc_did10_usa_svi)
+```
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did10_usa_svi %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2020 df, create post variable and set to 1, create year variable and set to 2020
+nmtc_did20_usa_svi <- svi_national_nmtc_df %>% 
+  select(GEOID_2010_trt, cbsa, F_THEME1_20, F_THEME2_20, F_THEME3_20, F_THEME4_20, F_TOTAL_20, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2020) %>%
+  rename("treat" = "nmtc_flag",
+         "SVI_FLAG_COUNT_SES" = "F_THEME1_20",
+         "SVI_FLAG_COUNT_HHCHAR" = "F_THEME2_20",
+         "SVI_FLAG_COUNT_REM" = "F_THEME3_20",
+         "SVI_FLAG_COUNT_HOUSETRANSPT" = "F_THEME4_20",
+         "SVI_FLAG_COUNT_OVERALL" = "F_TOTAL_20"
+         )
+
+
+nrow(nmtc_did20_usa_svi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did20_usa_svi %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_usa_svi <- bind_rows(nmtc_did10_usa_svi, nmtc_did20_usa_svi)
+
+nmtc_diff_in_diff_usa_svi <- nmtc_diff_in_diff_usa_svi %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_usa_svi)
+```
+
+### National Median Income
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2010 df, create post variable and set to 0, create year variable and set to 2010, remove any tracts that don't have data for 2010 and 2019
+nmtc_did10_usa_inc <- svi_national_nmtc_df %>% 
+  filter(!is.na(Median_Income_10adj_log)) %>% filter(!is.na(Median_Income_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Income_10adj_log, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_INCOME" = "Median_Income_10adj_log") 
+
+
+nrow(nmtc_did10_usa_inc)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2019 df, create post variable and set to 1, create year variable and set to 2019, remove any tracts that don't have data for 2010 and 2019
+nmtc_did19_usa_inc <- svi_national_nmtc_df %>% 
+  filter(!is.na(Median_Income_10adj_log)) %>% filter(!is.na(Median_Income_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Income_19_log, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2019) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_INCOME" = "Median_Income_19_log") 
+
+
+nrow(nmtc_did19_usa_inc)
+```
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_usa_inc <- bind_rows(nmtc_did10_usa_inc, nmtc_did19_usa_inc)
+
+nmtc_diff_in_diff_usa_inc <- nmtc_diff_in_diff_usa_inc %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_usa_inc)
+```
+
+### National Median Home Value
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did10_usa_mhv <- svi_national_nmtc_df %>% 
+  filter(!is.na(Median_Home_Value_10adj_log)) %>% filter(!is.na(Median_Home_Value_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Home_Value_10adj_log, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_HOME_VALUE" = "Median_Home_Value_10adj_log") 
+
+
+nrow(nmtc_did10_usa_mhv)
+```
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did19_usa_mhv <- svi_national_nmtc_df %>% 
+  filter(!is.na(Median_Home_Value_10adj_log)) %>% filter(!is.na(Median_Home_Value_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Home_Value_19_log, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2019) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_HOME_VALUE" = "Median_Home_Value_19_log") 
+
+
+nrow(nmtc_did19_usa_mhv)
+```
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_usa_mhv <- bind_rows(nmtc_did10_usa_mhv, nmtc_did19_usa_mhv)
+
+nmtc_diff_in_diff_usa_mhv <- nmtc_diff_in_diff_usa_mhv %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_usa_mhv)
+```
+
+### National House Price Index
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did10_usa_hpi <- svi_national_nmtc_df %>% 
+  filter(!is.na(housing_price_index10_log)) %>% filter(!is.na(housing_price_index20_log)) %>%
+  select(GEOID_2010_trt, cbsa, housing_price_index10_log, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "HOUSE_PRICE_INDEX" = "housing_price_index10_log") 
+
+
+nrow(nmtc_did10_usa_hpi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did20_usa_hpi <- svi_national_nmtc_df %>% 
+  filter(!is.na(housing_price_index10_log)) %>% filter(!is.na(housing_price_index20_log)) %>%
+  select(GEOID_2010_trt, cbsa, housing_price_index20_log, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2020) %>%
+  rename("treat" = "nmtc_flag",
+         "HOUSE_PRICE_INDEX" = "housing_price_index20_log") 
+
+
+nrow(nmtc_did20_usa_hpi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_usa_hpi <- bind_rows(nmtc_did10_usa_hpi, nmtc_did20_usa_hpi)
+
+nmtc_diff_in_diff_usa_hpi <- nmtc_diff_in_diff_usa_hpi %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_usa_hpi)
+```
+
+# NMTC Divisional
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2010 df, create post variable and set to 0, create year variable and set to 2010
+nmtc_did10_div_svi <- svi_divisional_nmtc_df %>% 
+  select(GEOID_2010_trt, cbsa, F_THEME1_10, F_THEME2_10, F_THEME3_10, F_THEME4_10, F_TOTAL_10, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "SVI_FLAG_COUNT_SES" = "F_THEME1_10",
+         "SVI_FLAG_COUNT_HHCHAR" = "F_THEME2_10",
+         "SVI_FLAG_COUNT_REM" = "F_THEME3_10",
+         "SVI_FLAG_COUNT_HOUSETRANSPT" = "F_THEME4_10",
+         "SVI_FLAG_COUNT_OVERALL" = "F_TOTAL_10") 
+
+nrow(nmtc_did10_div_svi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2020 df, create post variable and set to 1, create year variable and set to 2020
+nmtc_did20_div_svi <- svi_divisional_nmtc_df %>% 
+  select(GEOID_2010_trt, cbsa, F_THEME1_20, F_THEME2_20, F_THEME3_20, F_THEME4_20, F_TOTAL_20, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2020) %>%
+  rename("treat" = "nmtc_flag",
+         "SVI_FLAG_COUNT_SES" = "F_THEME1_20",
+         "SVI_FLAG_COUNT_HHCHAR" = "F_THEME2_20",
+         "SVI_FLAG_COUNT_REM" = "F_THEME3_20",
+         "SVI_FLAG_COUNT_HOUSETRANSPT" = "F_THEME4_20",
+         "SVI_FLAG_COUNT_OVERALL" = "F_TOTAL_20"
+  )
+
+
+nrow(nmtc_did20_div_svi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_div_svi <- bind_rows(nmtc_did10_div_svi, nmtc_did20_div_svi)
+
+nmtc_diff_in_diff_div_svi <- nmtc_diff_in_diff_div_svi %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_div_svi)
+```
+
+## Median Income
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2010 df, create post variable and set to 0, create year variable and set to 2010, remove any tracts that don't have data for 2010 and 2019
+nmtc_did10_div_inc <- svi_divisional_nmtc_df %>% 
+  filter(!is.na(Median_Income_10adj_log)) %>% filter(!is.na(Median_Income_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Income_10adj_log, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_INCOME" = "Median_Income_10adj_log") 
+
+
+nrow(nmtc_did10_div_inc)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2019 df, create post variable and set to 1, create year variable and set to 2019, remove any tracts that don't have data for 2010 and 2019
+nmtc_did19_div_inc <- svi_divisional_nmtc_df %>% 
+  filter(!is.na(Median_Income_10adj_log)) %>% filter(!is.na(Median_Income_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Income_19_log, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2019) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_INCOME" = "Median_Income_19_log") 
+
+
+nrow(nmtc_did19_div_inc)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_div_inc <- bind_rows(nmtc_did10_div_inc, nmtc_did19_div_inc)
+
+nmtc_diff_in_diff_div_inc <- nmtc_diff_in_diff_div_inc %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_div_inc)
+```
+
+## Home Value
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did10_div_mhv <- svi_divisional_nmtc_df %>% 
+  filter(!is.na(Median_Home_Value_10adj_log)) %>% filter(!is.na(Median_Home_Value_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Home_Value_10adj_log, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_HOME_VALUE" = "Median_Home_Value_10adj_log") 
+
+
+nrow(nmtc_did10_div_mhv)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did19_div_mhv <- svi_divisional_nmtc_df %>% 
+  filter(!is.na(Median_Home_Value_10adj_log)) %>% filter(!is.na(Median_Home_Value_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Home_Value_19_log, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2019) %>%
+  rename("treat" = "nmtc_flag",
+         "MEDIAN_HOME_VALUE" = "Median_Home_Value_19_log") 
+
+
+nrow(nmtc_did19_div_mhv)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_div_mhv <- bind_rows(nmtc_did10_div_mhv, nmtc_did19_div_mhv)
+
+nmtc_diff_in_diff_div_mhv <- nmtc_diff_in_diff_div_mhv %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_div_mhv)
+```
+
+## House Price Index
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did10_div_hpi <- svi_divisional_nmtc_df %>% 
+  filter(!is.na(housing_price_index10_log)) %>% filter(!is.na(housing_price_index20_log)) %>%
+  select(GEOID_2010_trt, cbsa, housing_price_index10_log, nmtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "nmtc_flag",
+         "HOUSE_PRICE_INDEX" = "housing_price_index10_log") 
+
+
+nrow(nmtc_did10_div_hpi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_did20_div_hpi <- svi_divisional_nmtc_df %>% 
+  filter(!is.na(housing_price_index10_log)) %>% filter(!is.na(housing_price_index20_log)) %>%
+  select(GEOID_2010_trt, cbsa, housing_price_index20_log, nmtc_flag) %>% 
+  mutate(post = 1,
+         year = 2020) %>%
+  rename("treat" = "nmtc_flag",
+         "HOUSE_PRICE_INDEX" = "housing_price_index20_log") 
+
+
+nrow(nmtc_did20_div_hpi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_diff_in_diff_div_hpi <- bind_rows(nmtc_did10_div_hpi, nmtc_did20_div_hpi)
+
+nmtc_diff_in_diff_div_hpi <- nmtc_diff_in_diff_div_hpi %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(nmtc_diff_in_diff_div_hpi)
+```
+# Homework
+
+#### For this evaluation, we employ a difference-in-differences (diff-in-diff) model to estimate the impact of federal tax credit programs on socioeconomic outcomes. The diff-in-diff approach allows us to compare changes over time between areas that received interventions and those that did not. We will be comparing groups from both Low-Income Housing Tax Credits (LIHTC) and New Markets Tax Credits (NMTC).
+
+#### Our dependent variables capture key measures of tract well-being:
+
+#### * Social Vulnerability Index
+#### * Median Household Income
+#### * Median Home Value
+#### * House Price Index
+
+#### These variables provide a comprehensive view of both economic and social changes in the communities studied. The independent variables focus on the presence and intensity of LIHTC and NMTC allocations, representing targeted federal investments intended to stimulate housing affordability and economic development in underserved areas.
+
+
+## NMTC Divisional Models
+
+```{r, warning=FALSE, message=FALSE}
+# SVI & Economic Models
+
+m1_nmtc_div <- lm( SVI_FLAG_COUNT_SES ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_svi )
+
+m2_nmtc_div <- lm( SVI_FLAG_COUNT_HHCHAR ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_svi )
+
+m3_nmtc_div <- lm( SVI_FLAG_COUNT_REM ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_svi )
+
+m4_nmtc_div <- lm( SVI_FLAG_COUNT_HOUSETRANSPT ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_svi )
+
+m5_nmtc_div <- lm( SVI_FLAG_COUNT_OVERALL  ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_svi)
+
+m6_nmtc_div <- lm( MEDIAN_INCOME ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_inc )
+
+m7_nmtc_div <- lm( MEDIAN_HOME_VALUE ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_mhv )
+
+m8_nmtc_div <- lm( HOUSE_PRICE_INDEX ~ treat + post + treat*post + cbsa, data=nmtc_diff_in_diff_div_hpi )
+
+# Add all models to a list
+models <- list(
+  
+  "SES" = m1_nmtc_div,
+  "HHChar"  = m2_nmtc_div,
+  "REM" = m3_nmtc_div,
+  "HOUSETRANSPT" = m4_nmtc_div,
+  "OVERALL" = m5_nmtc_div,
+  "Median Income (USD, logged)" = m6_nmtc_div,
+  "Median Home Value (USD, logged)" = m7_nmtc_div,
+  "House Price Index (logged)" = m8_nmtc_div
+)
+
+
+# Display model results
+modelsummary(models,  fmt = 2, stars = c('*' = .05, '**' = .01, '***' = .001), coef_omit = "cbsa", gof_omit = "IC|Log",
+             notes = list('All models include metro-level fixed effects by core-based statistical area (cbsa).'),
+             title = paste0("Differences-in-Differences Linear Regression Analysis of NMTC in ", census_division)) %>%
+  group_tt(j = list("Social Vulnerability" = 2:6, "Economic Outcomes" = 7:9))
+```
+
+#### In the above graph, we can use the different combined results to understand how the NMTC program affected, or did not affect, Social Economic Status (SES). We can see this through:
+
+#### * The starting amount of flags for the column (Intercept)
+#### * The effect of the program to the column (Intercept + Treat)
+#### * The change after the initial period, regaurdless of whether or not in the program (Intercept + Post)
+#### * The change after the initial period for those in the program (Intercept + Treat x Post)
+
+#### In the South Atlantic Division for those in the NMTC program, we can see that there was a slight decrease in the amount of flags. However, the changes were not statistically significant. For this reason, we are unable to determine whether or not the program was successful in affecting SES.
+
+#### Due to our results, it is possible that a different model, or including omitted variables, would lead to better results.
+
+## Visualize NMTC Divisional Models
+
+#### Since we did not have any significant significance, we do not need to visualize our outcomes.
+
+# LIHTC Divisional
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2010 df, create post variable and set to 0, create year variable and set to 2010
+lihtc_did10_div_svi <- svi_divisional_lihtc_df %>% 
+  select(GEOID_2010_trt, cbsa, F_THEME1_10, F_THEME2_10, F_THEME3_10, F_THEME4_10, F_TOTAL_10, lihtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "lihtc_flag",
+         "SVI_FLAG_COUNT_SES" = "F_THEME1_10",
+         "SVI_FLAG_COUNT_HHCHAR" = "F_THEME2_10",
+         "SVI_FLAG_COUNT_REM" = "F_THEME3_10",
+         "SVI_FLAG_COUNT_HOUSETRANSPT" = "F_THEME4_10",
+         "SVI_FLAG_COUNT_OVERALL" = "F_TOTAL_10") 
+
+nrow(lihtc_did10_div_svi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2020 df, create post variable and set to 1, create year variable and set to 2020
+lihtc_did20_div_svi <- svi_divisional_lihtc_df %>% 
+  select(GEOID_2010_trt, cbsa, F_THEME1_20, F_THEME2_20, F_THEME3_20, F_THEME4_20, F_TOTAL_20, lihtc_flag) %>% 
+  mutate(post = 1,
+         year = 2020) %>%
+  rename("treat" = "lihtc_flag",
+         "SVI_FLAG_COUNT_SES" = "F_THEME1_20",
+         "SVI_FLAG_COUNT_HHCHAR" = "F_THEME2_20",
+         "SVI_FLAG_COUNT_REM" = "F_THEME3_20",
+         "SVI_FLAG_COUNT_HOUSETRANSPT" = "F_THEME4_20",
+         "SVI_FLAG_COUNT_OVERALL" = "F_TOTAL_20"
+  )
+
+
+nrow(lihtc_did20_div_svi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_diff_in_diff_div_svi <- bind_rows(lihtc_did10_div_svi, lihtc_did20_div_svi)
+
+lihtc_diff_in_diff_div_svi <- lihtc_diff_in_diff_div_svi %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(lihtc_diff_in_diff_div_svi)
+```
+
+## Median Income
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2010 df, create post variable and set to 0, create year variable and set to 2010, remove any tracts that don't have data for 2010 and 2019
+lihtc_did10_div_inc <- svi_divisional_lihtc_df %>% 
+  filter(!is.na(Median_Income_10adj_log)) %>% filter(!is.na(Median_Income_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Income_10adj_log, lihtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "lihtc_flag",
+         "MEDIAN_INCOME" = "Median_Income_10adj_log") 
+
+
+nrow(lihtc_did10_div_inc)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+# Create 2019 df, create post variable and set to 1, create year variable and set to 2019, remove any tracts that don't have data for 2010 and 2019
+lihtc_did19_div_inc <- svi_divisional_lihtc_df %>% 
+  filter(!is.na(Median_Income_10adj_log)) %>% filter(!is.na(Median_Income_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Income_19_log, lihtc_flag) %>% 
+  mutate(post = 1,
+         year = 2019) %>%
+  rename("treat" = "lihtc_flag",
+         "MEDIAN_INCOME" = "Median_Income_19_log") 
+
+
+nrow(lihtc_did19_div_inc)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_diff_in_diff_div_inc <- bind_rows(lihtc_did10_div_inc, lihtc_did19_div_inc)
+
+lihtc_diff_in_diff_div_inc <- lihtc_diff_in_diff_div_inc %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(lihtc_diff_in_diff_div_inc)
+```
+
+## Home Value
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_did10_div_mhv <- svi_divisional_lihtc_df %>% 
+  filter(!is.na(Median_Home_Value_10adj_log)) %>% filter(!is.na(Median_Home_Value_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Home_Value_10adj_log, lihtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "lihtc_flag",
+         "MEDIAN_HOME_VALUE" = "Median_Home_Value_10adj_log") 
+
+
+nrow(lihtc_did10_div_mhv)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_did19_div_mhv <- svi_divisional_lihtc_df %>% 
+  filter(!is.na(Median_Home_Value_10adj_log)) %>% filter(!is.na(Median_Home_Value_19_log)) %>%
+  select(GEOID_2010_trt, cbsa, Median_Home_Value_19_log, lihtc_flag) %>% 
+  mutate(post = 1,
+         year = 2019) %>%
+  rename("treat" = "lihtc_flag",
+         "MEDIAN_HOME_VALUE" = "Median_Home_Value_19_log") 
+
+
+nrow(lihtc_did19_div_mhv)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_diff_in_diff_div_mhv <- bind_rows(lihtc_did10_div_mhv, lihtc_did19_div_mhv)
+
+lihtc_diff_in_diff_div_mhv <- lihtc_diff_in_diff_div_mhv %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(lihtc_diff_in_diff_div_mhv)
+```
+
+# House Price Index
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_did10_div_hpi <- svi_divisional_lihtc_df %>% 
+  filter(!is.na(housing_price_index10_log)) %>% filter(!is.na(housing_price_index20_log)) %>%
+  select(GEOID_2010_trt, cbsa, housing_price_index10_log, lihtc_flag) %>% 
+  mutate(post = 0,
+         year = 2010) %>%
+  rename("treat" = "lihtc_flag",
+         "HOUSE_PRICE_INDEX" = "housing_price_index10_log") 
+
+
+nrow(lihtc_did10_div_hpi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_did20_div_hpi <- svi_divisional_lihtc_df %>% 
+  filter(!is.na(housing_price_index10_log)) %>% filter(!is.na(housing_price_index20_log)) %>%
+  select(GEOID_2010_trt, cbsa, housing_price_index20_log, lihtc_flag) %>% 
+  mutate(post = 1,
+         year = 2020) %>%
+  rename("treat" = "lihtc_flag",
+         "HOUSE_PRICE_INDEX" = "housing_price_index20_log") 
+
+
+nrow(lihtc_did20_div_hpi)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+lihtc_diff_in_diff_div_hpi <- bind_rows(lihtc_did10_div_hpi, lihtc_did20_div_hpi)
+
+lihtc_diff_in_diff_div_hpi <- lihtc_diff_in_diff_div_hpi %>% arrange(post, treat, GEOID_2010_trt)
+
+nrow(lihtc_diff_in_diff_div_hpi)
+```
+
+## LIHTC Divisional Model
+
+```{r, warning=FALSE, message=FALSE}
+# SVI & Economic Models
+
+m1_lihtc_div <- lm( SVI_FLAG_COUNT_SES ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_svi )
+
+m2_lihtc_div <- lm( SVI_FLAG_COUNT_HHCHAR ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_svi )
+
+m3_lihtc_div <- lm( SVI_FLAG_COUNT_REM ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_svi )
+
+m4_lihtc_div <- lm( SVI_FLAG_COUNT_HOUSETRANSPT ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_svi )
+
+m5_lihtc_div <- lm( SVI_FLAG_COUNT_OVERALL  ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_svi)
+
+m6_lihtc_div <- lm( MEDIAN_INCOME ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_inc )
+
+m7_lihtc_div <- lm( MEDIAN_HOME_VALUE ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_mhv )
+
+m8_lihtc_div <- lm( HOUSE_PRICE_INDEX ~ treat + post + treat*post + cbsa, data=lihtc_diff_in_diff_div_hpi )
+
+# Add all models to a list
+models <- list(
+  
+  "SES" = m1_lihtc_div,
+  "HHChar"  = m2_lihtc_div,
+  "REM" = m3_lihtc_div,
+  "HOUSETRANSPT" = m4_lihtc_div,
+  "OVERALL" = m5_lihtc_div,
+  "Median Income (USD, logged)" = m6_lihtc_div,
+  "Median Home Value (USD, logged)" = m7_lihtc_div,
+  "House Price Index (logged)" = m8_lihtc_div
+)
+
+
+# Display model results
+modelsummary(models,  fmt = 2, stars = c('*' = .05, '**' = .01, '***' = .001), coef_omit = "cbsa", gof_omit = "IC|Log",
+             notes = list('All models include metro-level fixed effects by core-based statistical area (cbsa).'),
+             title = paste0("Differences-in-Differences Linear Regression Analysis of LIHTC in ", census_division)) %>%
+  group_tt(j = list("Social Vulnerability" = 2:6, "Economic Outcomes" = 7:9))
+```
+
+
+#### In the above graph, we can use the different combined results to understand how the LIHTC program affected, or did not affect, Social Economic Status (SES). We can see this through:
+
+#### * The starting amount of flags for the column (Intercept)
+#### * The effect of the program to the column (Intercept + Treat)
+#### * The change after the initial period, regaurdless of whether or not in the program (Intercept + Post)
+#### * The change after the initial period for those in the program (Intercept + Treat x Post)
+
+#### In the South Atlantic Division for those in the LIHTC program, we see a slight increase for SES. However, the change is not statistically significant. For this reason, we are unable to determine whether or not the program was successful in affecting SES.
+
+#### Due to our results, it is possible that a different model, or including omitted variables, would lead to better results.
+
+## Visualize NMTC Divisional Models
+
+#### Since we once again did not have any significant significance, we do not need to visualize our outcomes.
+
+
+```{r, warning=FALSE, message=FALSE}
+# Save data sets
+
+saveRDS(svi_divisional_lihtc_df, file = here::here(paste0("data/rodeo/", str_replace_all(census_division, " ", "_"), "_svi_divisional_lihtc.rds")))
+
+saveRDS(svi_national_lihtc_df, file = here::here(paste0("data/rodeo/", str_replace_all(census_division, " ", "_"), "_svi_national_lihtc.rds")))
+
+saveRDS(svi_divisional_nmtc_df, file = here::here(paste0("data/rodeo/", str_replace_all(census_division, " ", "_"), "_svi_divisional_nmtc.rds")))
+
+saveRDS(svi_national_nmtc_df, file = here::here(paste0("data/rodeo/", str_replace_all(census_division, " ", "_"), "_svi_national_nmtc.rds")))
+
+# Save regression models
+
+save(m1_nmtc_div, m2_nmtc_div, m3_nmtc_div, m4_nmtc_div, m5_nmtc_div, m6_nmtc_div, m7_nmtc_div, m8_nmtc_div, file = here::here(paste0("data/rodeo/", str_replace_all(census_division, " ", "_"), "_svi_did_models_nmtc.RData")), compress=TRUE, compression_level = 9)
+
+save(m1_lihtc_div, m2_lihtc_div, m3_lihtc_div, m4_lihtc_div, m5_lihtc_div, m6_lihtc_div, m7_lihtc_div, m8_lihtc_div, file = here::here(paste0("data/rodeo/", str_replace_all(census_division, " ", "_"), "_svi_did_models_lihtc.RData")), compress=TRUE, compression_level = 9)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

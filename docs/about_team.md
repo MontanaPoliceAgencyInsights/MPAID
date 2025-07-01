@@ -1,0 +1,101 @@
+---
+title: "About Us"
+subtitle: "PAF 515 Spring 2024 Team 00"
+#date: "03/17/2024"
+layout: splash
+toc: true
+---
+
+<!--- CSS for Circles --->
+
+<style>
+img {  
+width: 180px;  
+height: 180px;
+<!---height: auto;--->  
+}  
+
+img.rounded-corners {
+  width: 320px;  
+  height: 320px;
+  border-radius: 50%;
+}
+
+figure {
+  display: inline-block;
+  text-align: center;
+  margin: 5px; /* adjust as needed */
+}
+
+</style>
+
+# About The Team
+
+## Kenaniah Dodson
+
+<figure>
+<img src="https://watts-college.github.io/project-paf-515-2025s-team-04/docs/imgs/dodson_photo.jpg"
+alt="Alt-text: Dodson icon" class = "rounded-corners" />
+<figcaption aria-hidden="true">Alt-text: Dodson Photo</figcaption>
+</figure>
+
+<br>
+
+**Researched Census Division**: South Atlantic Division
+
+**Degrees**: <i> Arizona State University, B.A. Business, Concentration in Law, Pursuing M.S. Program Evaluation & Data Analytics </i>
+
+**Career**: 6 Years of Multi-Unit Management, pursuing career in Program Evaluation
+
+**Hobby**: Running, Travelling, and Spending time with my Wife and Pug
+
+
+Visit my [website](https://kenaniahdodson.github.io/) and [GitHub](https://github.com/kenaniahdodson).
+
+<hr>
+
+## Michelle Knopp
+
+<figure>
+<img src="https://watts-college.github.io/project-paf-515-2025s-team-04/docs/imgs/knopp_photo.JPG"
+alt="Alt-text: Knopp icon" class = "rounded-corners" />
+<figcaption aria-hidden="true">Alt-text: Knopp photo</figcaption>
+</figure>
+
+<br>
+
+**Researched Census Division**: Mountain Division
+
+**Degrees**: Arizona State University, B.S. Forensic Psychology, Pursuing M.S. Program Evaluation & Data Analytics
+
+**Career**: Currently Police Patrol Sergeant for Butte-SilverBow PD, seeking Program Evaluation career.
+
+**Hobby**: Enjoying traveling, cruising, running, hiking and hiking.
+
+Visit my [website](https://michelleann117.github.io/jekyll/) and [GitHub](https://github.com/MichelleAnn117).
+
+<hr>
+
+## Drew Radovich
+
+<figure>
+<img src="https://watts-college.github.io/project-paf-515-2025s-team-04/docs/imgs/radovich_photo.jpg"
+alt="Alt-text: radovich icon" class = "rounded-corners" />
+<figcaption aria-hidden="true">Alt-text: radovich photo</figcaption>
+</figure>
+
+<br>
+
+**Researched Census Division**: Pacific Division
+
+**Degrees**: <i> Candidate for Master's in Program Evaluation and Data Analytics from Arizona State University </i>
+
+**Career**: Currently pursuing careers in data analytics. Retail and healthcare experience.
+
+**Hobby**: Soccer, coffee, traveling, and listening to music.
+
+Visit my [website](https://drewradovich.github.io/) and [GitHub](https://github.com/drewradovich).
+
+<hr>
+
+

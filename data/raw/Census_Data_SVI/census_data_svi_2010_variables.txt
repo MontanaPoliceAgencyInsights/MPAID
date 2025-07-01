@@ -1,0 +1,249 @@
+ACS5/ACS1 2010:
+
+Total Population: B01001_001
+Housing Units: B25001_001
+
+Persons below 150% Poverty level: 
+C17002_002 
+C17002_003 
+C17002_004 
+C17002_005
+Population poverty known: C17002_001
+Percentage poverty: Persons below 150% Poverty level/Population poverty known
+
+Civilian unemployed:
+B23001_008	
+B23001_015	
+B23001_022	
+B23001_029	
+B23001_036	
+B23001_043	
+B23001_050	
+B23001_057	
+B23001_064	
+B23001_071
+B23001_094	
+B23001_101	
+B23001_108	
+B23001_115	
+B23001_122	
+B23001_129	
+B23001_136	
+B23001_143	
+B23001_150	
+B23001_157
+Civilian employment known: 
+B23001_006
+B23001_013	
+B23001_020		
+B23001_027		
+B23001_034		
+B23001_041		
+B23001_048		
+B23001_055		
+B23001_062
+B23001_069
+B23001_092	
+B23001_099	
+B23001_106
+B23001_113
+B23001_120	
+B23001_127
+B23001_134
+B23001_141
+B23001_148	
+B23001_155
+Percentage unemployed: Civilian unemployed/Civilian employment known
+
+Owner Housing cost mortgage 30 or greater: 
+B25091_008	 
+B25091_009	 
+B25091_010 
+B25091_011
+Owner housing cost no mortgage 30 or greater:
+B25091_019 
+B25091_020 	
+B25091_021 	
+B25091_022 
+Rent percentage of income 30 or greater:
+B25070_007 		
+B25070_008 		
+B25070_009 		
+B25070_010
+Owner housing mortgage + renters:
+B25091_001 + B25070_001
+Pct Non-affordable housing: (Owner Housing cost mortgage 30 or greater + Owner housing cost no mortgage 30 or greater + Rent percentage of income 30 or greater)/
+(Owner housing mortgage + renters)
+
+Persons 25 & up, no HS diploma:
+B15002_003 	
+B15002_004 	
+B15002_005 	
+B15002_006 		
+B15002_007 		
+B15002_008 		
+B15002_009 		
+B15002_010 
+B15002_020 
+B15002_021 		
+B15002_022 	
+B15002_023 	
+B15002_024 	
+B15002_025 	
+B15002_026 	
+B15002_027
+Total educational attainment persons 25+:
+B15002_001
+Pct no HS ED age 25+:
+Persons 25 & up, no HS diploma/Total educational attainment persons 25+
+
+Uninsured health (NOTE: USE 2012 ACS5):
+C27010_006
+C27010_011 
+C27010_016 	
+C27010_021
+Total insurance status (NOTE: USE 2012 ACS5):
+C27010_001
+Pct uninsured (NOTE: USE2012 ACS5):
+Uninsured health/Total insurance status
+
+Age 65+:
+B01001_020 
+B01001_021 	
+B01001_022 	
+B01001_023 
+B01001_024 	
+B01001_025 
+B01001_044 	
+B01001_045 	
+B01001_046 	
+B01001_047 	
+B01001_048 	
+B01001_049
+Age 17 and under:
+B01001_003 
+B01001_004 	
+B01001_005 	
+B01001_006 
+B01001_027 	
+B01001_028 	
+B01001_029 	
+B01001_030
+Total population:
+B01001_001
+Pct Age 65+:
+Age 65+/Total pop
+Pct 17 & under:
+Age 17 & under/Total pop
+
+Disabled 18+ civilians (NOTE: USE 2012 ACS5):
+C21007_005 	
+C21007_008 	
+C21007_012 	
+C21007_015 	
+C21007_020 	
+C21007_023 	
+C21007_027 	
+C21007_030
+Total civilians (NOTE: USE 2012 ACS5):
+C21007_001
+Pct Disabled (NOTE: USE 2012 ACS5):
+Disabled 18+ civilians/Total civilians
+
+Single parent households:
+B11004_010
+B11004_016
+Total households:
+B11004_001
+Pct single parent households: 
+Single parent households/Total households
+
+
+Persons age 5+ who speak less than well English:
+B16004_007 	
+B16004_008 	
+B16004_012 	
+B16004_013 	
+B16004_017 	
+B16004_018 	
+B16004_022 	
+B16004_023 	
+B16004_029 	
+B16004_030 
+B16004_034 	
+B16004_035 	
+B16004_039 	
+B16004_040 	
+B16004_044 	
+B16004_045 	
+B16004_051 	
+B16004_052 	
+B16004_056 	
+B16004_057 
+B16004_061 	
+B16004_062 	
+B16004_066 	
+B16004_067
+Total pop age 5+:
+B16004_001
+Pct pop who speak less than well English:
+Persons age 5+ who speak less than well English/Total pop age 5+
+
+Minority:
+B03002_004 	
+B03002_005 	
+B03002_006 	
+B03002_007 	
+B03002_008 	
+B03002_009 	
+B03002_013 	
+B03002_014 	
+B03002_015 	
+B03002_016 	
+B03002_017 	
+B03002_018 	
+B03002_019 	
+Total pop known race/ethnicity:
+B03002_001
+Pct minorities:
+Minority/Total pop known race/ethnicity
+
+Greater than 10 units in structure:
+B25024_007 	
+B25024_008 	
+B25024_009 
+Mobile homes:
+B25024_010
+All structures:
+B25024_001
+Pct units > 10:
+Greater than 10 units in structure/All structures
+Pct mobile:
+Mobile homes/All structures
+
+Crowding:
+B25014_005 	
+B25014_006 	
+B25014_007 	
+B25014_011 	
+B25014_012 	
+B25014_013
+Total occupants per room:
+B25014_001
+Pct in crowded housing:
+Total occupants per room/Crowding
+
+Households no vehicle:
+B25044_003	
+B25044_010
+Total households with known vehicle status:
+B25044_001
+Pct with no vehicle:
+Households no vehicle/Total households with known vehicle status
+
+Group quarters:
+B09016_033
+Total Household type:
+B09016_001
+Percent group quarters:
+Group quarters/Percent group quarters

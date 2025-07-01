@@ -1,0 +1,1493 @@
+---
+title: "Visualizing The Intervention - Mountain Division"
+author: "Michelle Knopp"
+date: "2024-04-23"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+    preserve_yaml: true
+  rmdformats::downcute:
+    toc_depth: 3
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: "tango"
+    code_folding: show
+always_allow_html: true
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_format = "all") })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Library
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Turn off scientific notation
+options(scipen=999)
+
+# Load packages
+library(here)        # relative file paths for reproducibility
+library(tidyverse)   # data wrangling
+library(stringi)     # string data wrangling
+library(tigris)      # US census TIGER/Line shapefiles
+library(ggplot2)     # data visualization
+library(cowplot)     # data visualization plotting
+library(gridExtra)   # grid for data visualizations
+library(biscale)     # bivariate mapping
+library(kableExtra)  # table formatting
+library(scales)      # palette and number formatting
+library(cluster)     # clustering algorithms
+library(factoextra)  # clustering algorithms & visualization
+```
+
+
+# Functions
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+import::here( "fips_census_regions",
+              "load_svi_data",
+              "merge_svi_data",
+              "census_division",
+              "flag_summarize",
+              "summarize_county_nmtc",
+              "summarize_county_lihtc",
+              "elbow_plot",
+             # notice the use of here::here() that points to the .R file
+             # where all these R objects are created
+             .from = here::here("analysis/project_data_steps_knopp.R"),
+             .character_only = TRUE)
+```
+
+
+# SVI Data
+
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Load SVI data sets
+svi_2010 <- readRDS(here::here("data/raw/Census_Data_SVI/svi_2010_trt10.rds"))
+svi_2020 <- readRDS(here::here("data/raw/Census_Data_SVI/svi_2020_trt10.rds"))
+
+# Load mapping data sets
+svi_county_map2010 <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_county_svi_flags10.rds")))
+
+svi_county_map2020 <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_county_svi_flags20.rds")))
+
+divisional_st_sf <- readRDS(here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_st_sf.rds")))
+```
+
+
+# New Market Tax Credit (NMTC) & Low Income Housing Tax Credit (LIHTC) Data
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Load NMTC & LIHTC Tract Eligibility Data
+
+orig_nmtc <- readxl::read_excel(here::here("data/raw/NMTC_LIHTC_tracts/nmtc_2011-2015_lic_110217.xlsx"), sheet="NMTC LICs 2011-2015 ACS")
+
+high_migration_nmtc <- readxl::read_excel(here::here("data/raw/NMTC_LIHTC_tracts/nmtc_2011-2015_lic_110217.xlsx"), sheet="High migration tracts", skip=1)
+
+nmtc_awards_data <- readxl::read_excel(here::here("data/raw/NMTC_LIHTC_tracts/NMTC_Public_Data_Release_includes_FY_2021_Data_final.xlsx"), sheet = "Projects 2 - Data Set PUBLISH.P")
+
+lihtc_eligible <- readxl::read_excel(here::here("data/raw/NMTC_LIHTC_tracts/qct_data_2010_2011_2012.xlsx"))
+
+lihtc_projects <- read.csv(here::here("data/raw/NMTC_LIHTC_tracts/lihtcpub/LIHTCPUB.csv"))
+```
+
+## Load 2010 SVI Data
+
+
+```{r}
+# National 2010 Data
+svi_2010_national <- load_svi_data(svi_2010, percentile=.75)
+svi_2010_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Divisional 2010 Data
+svi_2010_divisional <- load_svi_data(svi_2010, rank_by = "divisional", location = census_division, percentile=.75)
+svi_2010_divisional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+## Load 2020 Data
+
+```{r}
+# National 2020 Data
+svi_2020_national <- load_svi_data(svi_2020, percentile=.75)
+svi_2020_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Divisional 2020 Data
+svi_2020_divisional <- load_svi_data(svi_2020, rank_by = "divisional", location =  census_division, percentile=.75)
+svi_2020_divisional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+## Merge 2010 and 2020 Data
+
+```{r}
+# Find tracts with divisional data in both 2010 and 2020
+svi_divisional <- merge_svi_data(svi_2010_divisional, svi_2020_divisional)
+svi_divisional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Find tracts with divisional data in both 2010 and 2020
+svi_national <- merge_svi_data(svi_2010_national, svi_2020_national)
+svi_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+# New Market Tax Credit Data Wrangling
+
+```{r, warning=FALSE, message=FALSE}
+orig_nmtc_df <- orig_nmtc %>% 
+  rename("GEOID10" = "2010 Census Tract Number FIPS code. GEOID",
+         "nmtc_eligibility_orig" = "Does Census Tract Qualify For NMTC Low-Income Community (LIC) on Poverty or Income Criteria?")
+
+orig_nmtc_df %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+high_migration_nmtc_df <- high_migration_nmtc %>% rename("GEOID10" = "2010 Census Tract Number FIPS code GEOID")
+
+high_migration_nmtc_df %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+# Add column to label tracts as high migration
+high_migration_nmtc_df <- high_migration_nmtc_df %>% mutate(high_migration = "Yes")
+
+# Join to original column
+orig_nmtc_df <- left_join(orig_nmtc_df, high_migration_nmtc_df, join_by(GEOID10 == GEOID10))
+
+# Update eligibility column with coalesce()
+nmtc_df <- orig_nmtc_df %>% 
+  mutate(nmtc_eligibility = coalesce(high_migration, nmtc_eligibility_orig))
+
+nmtc_df %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_eligible <- nmtc_df %>% 
+  select(GEOID10, nmtc_eligibility, `County Code`, `County Name`, `State Abbreviation`, `State Name`) %>% 
+  filter(tolower(nmtc_eligibility) == "yes")
+
+nmtc_eligible %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Save just tract ID and eligibility
+nmtc_eligible_df <- nmtc_eligible %>% select(GEOID10, nmtc_eligibility)
+nmtc_eligible_df %>% head()
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_awards_data %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+nmtc_awards <- nmtc_awards_data %>% 
+  mutate(`2010 Census Tract` = str_pad(`2010 Census Tract`, 11, "left", pad=0)) %>%
+  rename("GEOID10" =`2010 Census Tract`)
+
+nmtc_awards %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+# Create character zip_code column:
+nmtc_awards <- nmtc_awards %>% 
+  mutate(zip_code = str_pad(`Zip Code`, 5, "left", pad=0))
+
+nmtc_awards %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+# View tracts
+nmtc_awards_pre2010 <- nmtc_awards %>% 
+  filter(`Origination Year` <= 2010) %>% 
+  count(GEOID10) %>% 
+  rename("pre10_nmtc_project_cnt" = "n")
+
+nmtc_awards_dollars_pre2010 <- nmtc_awards %>% 
+  filter(`Origination Year` <= 2010) %>% 
+  group_by(GEOID10) %>% 
+  summarise(pre10_nmtc_dollars = sum(`Project QLICI Amount`, na.rm = TRUE))
+
+nmtc_awards_pre2010 <- left_join(nmtc_awards_pre2010, 
+                                 nmtc_awards_dollars_pre2010, 
+                                 join_by(GEOID10 == GEOID10))
+
+nmtc_awards_pre2010$pre10_nmtc_dollars_formatted <- scales::dollar_format()(nmtc_awards_pre2010$pre10_nmtc_dollars)
+
+nmtc_awards_pre2010 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+nmtc_awards_post2010 <- nmtc_awards %>% 
+  filter(`Origination Year` > 2010 & `Origination Year` <= 2020) %>% 
+  count(GEOID10) %>% 
+  rename("post10_nmtc_project_cnt" = "n")
+
+nmtc_awards_dollars_post2010 <- nmtc_awards %>% 
+  filter(`Origination Year` > 2010 & `Origination Year` <= 2020) %>% 
+  group_by(GEOID10) %>% 
+  summarise(post10_nmtc_dollars = sum(`Project QLICI Amount`, na.rm = TRUE))
+
+nmtc_awards_post2010 <- left_join(nmtc_awards_post2010, 
+                                  nmtc_awards_dollars_post2010, 
+                                  join_by(GEOID10 == GEOID10))
+
+nmtc_awards_post2010$post10_nmtc_dollars_formatted <- scales::dollar_format()(nmtc_awards_post2010$post10_nmtc_dollars)
+
+nmtc_awards_post2010 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Divisional data
+svi_divisional_nmtc_eligible <- left_join(svi_divisional, nmtc_eligible_df, join_by("GEOID_2010_trt" == "GEOID10")) %>% filter(tolower(nmtc_eligibility) == "yes")
+
+svi_divisional_nmtc_eligible %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# National data
+svi_national_nmtc_eligible <- left_join(svi_national, nmtc_eligible_df, join_by("GEOID_2010_trt" == "GEOID10")) %>% filter(tolower(nmtc_eligibility) == "yes")
+
+svi_national_nmtc_eligible %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Join divisional data to nmtc_awards_pre2010, set count to 0 if no data
+svi_divisional_nmtc_eligible <- 
+  left_join(svi_divisional_nmtc_eligible, nmtc_awards_pre2010, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+  mutate(pre10_nmtc_project_cnt = if_else(is.na(pre10_nmtc_project_cnt), 0, pre10_nmtc_project_cnt)) %>%
+    mutate(pre10_nmtc_dollars = if_else(is.na(pre10_nmtc_dollars), 0, pre10_nmtc_dollars)) %>%
+    mutate(pre10_nmtc_dollars_formatted = if_else(is.na(pre10_nmtc_dollars_formatted), "$0", pre10_nmtc_dollars_formatted))
+
+# View table
+svi_divisional_nmtc_eligible %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+# Join national data to nmtc_awards_pre2010, set count to 0 if no data
+svi_national_nmtc_eligible <- 
+  left_join(svi_national_nmtc_eligible, nmtc_awards_pre2010, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+  mutate(pre10_nmtc_project_cnt = if_else(is.na(pre10_nmtc_project_cnt), 0, pre10_nmtc_project_cnt)) %>%
+    mutate(pre10_nmtc_dollars = if_else(is.na(pre10_nmtc_dollars), 0, pre10_nmtc_dollars))%>%
+    mutate(pre10_nmtc_dollars_formatted = if_else(is.na(pre10_nmtc_dollars_formatted), "$0", pre10_nmtc_dollars_formatted))
+
+# View table
+svi_national_nmtc_eligible %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+
+```{r}
+# Find count of NMTC projects after 2010
+# Remove all tracts that do not have SVI flag counts for 2010
+# Remove all tracts that do not have SVI flag counts for 2020
+# Remove all tracts that had an NMTC project before 2010
+svi_divisional_nmtc <- 
+  left_join(svi_divisional_nmtc_eligible, nmtc_awards_post2010, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+  mutate(post10_nmtc_project_cnt = if_else(is.na(post10_nmtc_project_cnt), 0, post10_nmtc_project_cnt)) %>%
+  mutate(post10_nmtc_dollars = if_else(is.na(post10_nmtc_dollars), 0, post10_nmtc_dollars))%>%
+  mutate(post10_nmtc_dollars_formatted = if_else(is.na(post10_nmtc_dollars_formatted), "$0", post10_nmtc_dollars_formatted)) %>%
+  mutate(nmtc_flag = if_else(post10_nmtc_project_cnt > 0, 1, 0)) %>% 
+  filter(!is.na(F_TOTAL_10)) %>% 
+  filter(!is.na(F_TOTAL_20)) %>% 
+  filter(pre10_nmtc_project_cnt < 1)
+
+svi_divisional_nmtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Find count of NMTC projects after 2010
+# Remove all tracts that do not have SVI flag counts for 2010
+# Remove all tracts that do not have SVI flag counts for 2020
+# Remove all tracts that had an NMTC project before 2010
+svi_national_nmtc <- 
+  left_join(svi_national_nmtc_eligible, nmtc_awards_post2010, join_by("GEOID_2010_trt" == "GEOID10")) %>%
+  mutate(post10_nmtc_project_cnt = if_else(is.na(post10_nmtc_project_cnt), 0, post10_nmtc_project_cnt)) %>%
+  mutate(post10_nmtc_dollars = if_else(is.na(post10_nmtc_dollars), 0, post10_nmtc_dollars))%>%
+  mutate(post10_nmtc_dollars_formatted = if_else(is.na(post10_nmtc_dollars_formatted), "$0", post10_nmtc_dollars_formatted)) %>%
+  mutate(nmtc_flag = if_else(post10_nmtc_project_cnt > 0, 1, 0)) %>% 
+  filter(!is.na(F_TOTAL_10)) %>% 
+  filter(!is.na(F_TOTAL_20)) %>% 
+  filter(pre10_nmtc_project_cnt < 1)
+
+svi_national_nmtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+svi_national_nmtc_county_sum <- summarize_county_nmtc(svi_national_nmtc)
+
+svi_national_nmtc_county_sum %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+svi_divisional_nmtc_county_sum <- summarize_county_nmtc(svi_divisional_nmtc)
+svi_divisional_nmtc_county_sum %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Create data frame of NMTC eligible tracts 2010 nationally
+svi_national_nmtc10 <- svi_national_nmtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_10, E_TOTPOP_10) %>% rename("F_TOTAL" = "F_TOTAL_10")
+
+# Count national-level SVI flags for 2010, create unified fips column
+svi_2010_national_county_flags_nmtc <- flag_summarize(svi_national_nmtc10, "E_TOTPOP_10") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Add suffix to flag columns 2010
+colnames(svi_2010_national_county_flags_nmtc)[11:15] <- paste0(colnames(svi_2010_national_county_flags_nmtc)[11:15], 10)
+
+# Create data frame of NMTC eligible tracts 2020 nationally
+svi_national_nmtc20 <- svi_national_nmtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_20, E_TOTPOP_20) %>% rename("F_TOTAL" = "F_TOTAL_20")
+
+# Count national-level SVI flags for 2020, create unified fips column
+svi_2020_national_county_flags_nmtc <- flag_summarize(svi_national_nmtc20, "E_TOTPOP_20") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Identify needed columns for 2020, add suffix
+colnames(svi_2020_national_county_flags_nmtc)[11:15] <- paste0(colnames(svi_2020_national_county_flags_nmtc)[11:15], "20")
+
+# Filter to needed columns for 2020 to avoid duplicate column column names
+svi_2020_national_county_flags_join_nmtc <- svi_2020_national_county_flags_nmtc %>% ungroup() %>% select("fips_county_st", all_of(colnames(svi_2020_national_county_flags_nmtc)[11:15]))
+ 
+# Join 2010 and 2020 data
+svi_national_county_flags_nmtc <- left_join(svi_2010_national_county_flags_nmtc, svi_2020_national_county_flags_join_nmtc, join_by("fips_county_st" == "fips_county_st")) 
+
+svi_national_county_flags_nmtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_national_county_nmtc <- left_join(svi_national_nmtc_county_sum,
+                                      svi_national_county_flags_nmtc,
+                                    join_by("State" == "state", "County" == "county",
+                                            "Division" == "division"))
+
+svi_national_county_nmtc$post10_nmtc_project_cnt[is.na(svi_national_county_nmtc$post10_nmtc_project_cnt)] <- 0
+
+svi_national_county_nmtc$county_name <- paste0(svi_national_county_nmtc$County, ", ", svi_national_county_nmtc$State)
+
+svi_national_county_nmtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Create data frame of NMTC eligible tracts 2020 nationally
+svi_divisional_nmtc10 <- svi_divisional_nmtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_10, E_TOTPOP_10) %>% rename("F_TOTAL" = "F_TOTAL_10")
+
+# Count divisional-level SVI flags for 2010, create unified fips column
+svi_2010_divisional_county_flags_nmtc <- flag_summarize(svi_divisional_nmtc10, "E_TOTPOP_10") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Add suffix to flag columns 2010
+colnames(svi_2010_divisional_county_flags_nmtc)[11:15] <- paste0(colnames(svi_2010_divisional_county_flags_nmtc)[11:15], "10")
+
+# Create data frame of NMTC eligible tracts 2020 nationally
+svi_divisional_nmtc20 <- svi_divisional_nmtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_20, E_TOTPOP_20) %>% rename("F_TOTAL" = "F_TOTAL_20")
+
+# Count divisional-level SVI flags for 2020, create unified fips column
+svi_2020_divisional_county_flags_nmtc <- flag_summarize(svi_divisional_nmtc20, "E_TOTPOP_20") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Identify needed columns for 2020
+colnames(svi_2020_divisional_county_flags_nmtc)[11:15] <- paste0(colnames(svi_2020_divisional_county_flags_nmtc)[11:15], "20")
+
+# Filter to needed columns for 2020 to avoid duplicate column column names
+svi_2020_divisional_county_flags_join_nmtc <- svi_2020_divisional_county_flags_nmtc %>% ungroup() %>% select("fips_county_st", all_of(colnames(svi_2020_divisional_county_flags_nmtc)[11:15]))
+ 
+# Join 2010 and 2020 data
+svi_divisional_county_flags_nmtc <- left_join(svi_2010_divisional_county_flags_nmtc, svi_2020_divisional_county_flags_join_nmtc, join_by("fips_county_st" == "fips_county_st")) 
+
+svi_divisional_county_flags_nmtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_divisional_county_nmtc <- left_join(svi_divisional_nmtc_county_sum, 
+                                        svi_divisional_county_flags_nmtc,
+                                    join_by("State" == "state", "County" == "county",
+                                            "Division" == "division"))
+
+svi_divisional_county_nmtc$post10_nmtc_project_cnt[is.na(svi_divisional_county_nmtc $post10_nmtc_project_cnt)] <- 0
+
+svi_divisional_county_nmtc$county_name <- paste0(svi_divisional_county_nmtc$County, ", ", svi_divisional_county_nmtc$State)
+
+svi_divisional_county_nmtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+# Low Income Housing Tax Credit (LIHTC) Data Wrangling
+
+```{r}
+lihtc_eligible_flag <- lihtc_eligible %>% 
+  select("fips", "state", "county", "stcnty", "tract", "metro", "cbsa", "qct_2010") %>% 
+  rename("GEOID10" = "fips") %>% 
+  mutate(lihtc_eligibility = if_else(qct_2010 == 1, "Yes", "No")) %>% 
+  filter(tolower(lihtc_eligibility) == "yes") %>% 
+  select(GEOID10, lihtc_eligibility)
+
+lihtc_eligible_flag %>% head() 
+```
+
+```{r}
+lihtc_projects10 <- lihtc_projects %>% 
+  filter(yr_alloc < 8000) %>% 
+  filter(yr_alloc <= 2010) %>% 
+  count(fips2010) %>% 
+  rename("pre10_lihtc_project_cnt" = "n")
+
+lihtc_projects10 %>% head() 
+```
+
+```{r}
+lihtc_dollars10 <- lihtc_projects %>% 
+  filter(yr_alloc < 8000) %>% 
+  filter(yr_alloc <= 2010) %>%
+  select(fips2010, allocamt)
+
+lihtc_dollars10$allocamt[is.na(lihtc_dollars10$allocamt)] <- 0
+
+lihtc_dollars10 <- lihtc_dollars10 %>% 
+  group_by(fips2010) %>% 
+  summarise(pre10_lihtc_project_dollars = sum(allocamt, na.rm = TRUE))
+
+lihtc_dollars10 %>% head() 
+```
+
+```{r}
+lihtc_projects10 <- left_join(lihtc_projects10, lihtc_dollars10, join_by(fips2010 == fips2010))
+
+lihtc_projects10 %>% head()
+```
+
+
+```{r}
+lihtc_projects20 <- lihtc_projects %>% 
+  filter(yr_alloc < 8000) %>% 
+  filter(yr_alloc > 2010) %>% 
+  filter(yr_alloc < 2021) %>% 
+  count(fips2010) %>% 
+  rename("post10_lihtc_project_cnt" = "n")
+
+lihtc_projects20 %>% head() 
+```
+
+```{r}
+lihtc_dollars20 <- lihtc_projects %>% 
+  filter(yr_alloc < 8000) %>% 
+  filter(yr_alloc > 2010) %>% 
+  filter(yr_alloc < 2021) %>% 
+  select(fips2010, allocamt)
+
+lihtc_dollars20$allocamt[is.na(lihtc_dollars20$allocamt)] <- 0
+
+lihtc_dollars20 <- lihtc_dollars20 %>% 
+  group_by(fips2010) %>% 
+  summarise(post10_lihtc_project_dollars = sum(allocamt, na.rm = TRUE))
+
+lihtc_dollars20 %>% head() 
+```
+
+```{r}
+lihtc_projects20 <- left_join(lihtc_projects20, lihtc_dollars20, join_by(fips2010 == fips2010))
+
+lihtc_projects20 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+svi_divisional_lihtc10 <- left_join(svi_divisional, lihtc_projects10, join_by("GEOID_2010_trt" == "fips2010"))
+
+svi_divisional_lihtc10 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+svi_national_lihtc10 <- left_join(svi_national, lihtc_projects10, join_by("GEOID_2010_trt" == "fips2010"))
+
+svi_national_lihtc10 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+svi_divisional_lihtc20 <- left_join(svi_divisional_lihtc10, lihtc_projects20, join_by("GEOID_2010_trt" == "fips2010"))
+
+svi_divisional_lihtc20 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+svi_national_lihtc20 <- left_join(svi_national_lihtc10, lihtc_projects20, join_by("GEOID_2010_trt" == "fips2010"))
+
+svi_national_lihtc20 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_divisional_lihtc20 <- svi_divisional_lihtc20 %>% 
+  filter(is.na(pre10_lihtc_project_cnt)) %>% 
+  filter(post10_lihtc_project_cnt >= 1) %>% 
+  select(GEOID_2010_trt, pre10_lihtc_project_cnt, pre10_lihtc_project_dollars, post10_lihtc_project_cnt, post10_lihtc_project_dollars)
+
+# View data
+svi_divisional_lihtc20 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_national_lihtc20 <- svi_national_lihtc20 %>% 
+  filter(is.na(pre10_lihtc_project_cnt)) %>% 
+  filter(post10_lihtc_project_cnt >= 1) %>% 
+  select(GEOID_2010_trt, pre10_lihtc_project_cnt, pre10_lihtc_project_dollars, post10_lihtc_project_cnt, post10_lihtc_project_dollars)
+
+# View data
+svi_national_lihtc20 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Filter SVI divisional data to remove all tracts that had a project in 2010 or before:
+svi_divisional_lihtc <-  svi_divisional %>% 
+  filter(! GEOID_2010_trt %in% lihtc_projects10$fips2010)
+
+# Merge SVI divisional data with post 2010 project data, create flag for projects (1 for tracts that have LIHTC project, 0 for those that do not):
+svi_divisional_lihtc <- left_join(svi_divisional_lihtc, 
+                                  svi_divisional_lihtc20, 
+                                  join_by("GEOID_2010_trt" == "GEOID_2010_trt")) %>% 
+                        mutate(pre10_lihtc_project_cnt = replace_na(pre10_lihtc_project_cnt, 0),
+                               post10_lihtc_project_cnt = replace_na(post10_lihtc_project_cnt, 0),
+                               pre10_lihtc_project_dollars = replace_na(pre10_lihtc_project_dollars, 0),
+                               post10_lihtc_project_dollars = replace_na(post10_lihtc_project_dollars, 0),
+                               lihtc_flag = if_else(post10_lihtc_project_cnt >= 1, 1, 0))
+
+# Finally, we want to filter our dataset to only have tracts that are eligible for the LIHTC program and that have SVI data:
+svi_divisional_lihtc <- left_join(svi_divisional_lihtc, lihtc_eligible_flag, 
+                                  join_by("GEOID_2010_trt" == "GEOID10")) %>%
+                        filter(tolower(lihtc_eligibility) == "yes") %>%
+                        filter(!is.na(F_TOTAL_10)) %>% 
+                        filter(!is.na(F_TOTAL_20)) 
+
+
+# View data
+svi_divisional_lihtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+# Filter SVI national data to remove all tracts that had a project in 2010 or before:
+svi_national_lihtc <-  svi_national %>% 
+  filter(! GEOID_2010_trt %in% lihtc_projects10$fips2010)
+
+# Merge SVI national data with post 2010 project data, create flag for projects (1 for tracts that have LIHTC project, 0 for those that do not):
+svi_national_lihtc <- left_join(svi_national_lihtc, 
+                                  svi_national_lihtc20, 
+                                  join_by("GEOID_2010_trt" == "GEOID_2010_trt")) %>% 
+                        mutate(pre10_lihtc_project_cnt = replace_na(pre10_lihtc_project_cnt, 0),
+                               post10_lihtc_project_cnt = replace_na(post10_lihtc_project_cnt, 0),
+                                pre10_lihtc_project_dollars = replace_na(pre10_lihtc_project_dollars, 0),
+                               post10_lihtc_project_dollars = replace_na(post10_lihtc_project_dollars, 0),
+                               lihtc_flag = if_else(post10_lihtc_project_cnt >= 1, 1, 0))
+
+# Finally, we want to filter our dataset to only have tracts that are eligible for the LIHTC program and that have SVI data:
+svi_national_lihtc <- left_join(svi_national_lihtc, lihtc_eligible_flag, 
+                                  join_by("GEOID_2010_trt" == "GEOID10")) %>%
+                        filter(tolower(lihtc_eligibility) == "yes") %>%
+                        filter(!is.na(F_TOTAL_10)) %>% 
+                        filter(!is.na(F_TOTAL_20)) 
+
+
+# View data
+svi_national_lihtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_national_lihtc_county_sum <- summarize_county_lihtc(svi_national_lihtc)
+
+svi_national_lihtc_county_sum %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_divisional_lihtc_county_sum <- summarize_county_lihtc(svi_divisional_lihtc)
+svi_divisional_lihtc_county_sum %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Create data frame of LIHTC eligible tracts 2010 nationally
+svi_national_lihtc10 <- svi_national_lihtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_10, E_TOTPOP_10) %>% rename("F_TOTAL" = "F_TOTAL_10")
+
+# Count national-level SVI flags for 2010, create unified fips column
+svi_2010_national_county_flags_lihtc <- flag_summarize(svi_national_lihtc10, "E_TOTPOP_10") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Add suffix to flag columns 2010
+colnames(svi_2010_national_county_flags_lihtc)[11:15] <- paste0(colnames(svi_2010_national_county_flags_lihtc)[11:15], 10)
+
+# Create data frame of LIHTC eligible tracts 2020 nationally
+svi_national_lihtc20 <- svi_national_lihtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_20, E_TOTPOP_20) %>% rename("F_TOTAL" = "F_TOTAL_20")
+
+# Count national-level SVI flags for 2020, create unified fips column
+svi_2020_national_county_flags_lihtc <- flag_summarize(svi_national_lihtc20, "E_TOTPOP_20") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Identify needed columns for 2020, add suffix
+colnames(svi_2020_national_county_flags_lihtc)[11:15] <- paste0(colnames(svi_2020_national_county_flags_lihtc)[11:15], "20")
+
+# Filter to needed columns for 2020 to avoid duplicate column column names
+svi_2020_national_county_flags_join_lihtc <- svi_2020_national_county_flags_lihtc %>% ungroup() %>% select("fips_county_st", all_of(colnames(svi_2020_national_county_flags_lihtc)[11:15]))
+ 
+# Join 2010 and 2020 data
+svi_national_county_flags_lihtc <- left_join(svi_2010_national_county_flags_lihtc, svi_2020_national_county_flags_join_lihtc, join_by("fips_county_st" == "fips_county_st")) 
+
+svi_national_county_flags_lihtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_national_county_lihtc <- left_join(svi_national_lihtc_county_sum,
+                                      svi_national_county_flags_lihtc,
+                                    join_by("State" == "state", "County" == "county",
+                                            "Division" == "division"))
+
+svi_national_county_lihtc$post10_lihtc_project_cnt[is.na(svi_national_county_lihtc$post10_lihtc_project_cnt)] <- 0
+
+svi_national_county_lihtc$county_name <- paste0(svi_national_county_lihtc$County, ", ", svi_national_county_lihtc$State)
+
+svi_national_county_lihtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+```{r}
+# Create data frame of LIHTC eligible tracts 2020 nationally
+svi_divisional_lihtc10 <- svi_divisional_lihtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_10, E_TOTPOP_10) %>% rename("F_TOTAL" = "F_TOTAL_10")
+
+# Count divisional-level SVI flags for 2010, create unified fips column
+svi_2010_divisional_county_flags_lihtc <- flag_summarize(svi_divisional_lihtc10, "E_TOTPOP_10") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Add suffix to flag columns 2010
+colnames(svi_2010_divisional_county_flags_lihtc)[11:15] <- paste0(colnames(svi_2010_divisional_county_flags_lihtc)[11:15], "10")
+
+# Create data frame of NMTC eligible tracts 2020 nationally
+svi_divisional_lihtc20 <- svi_divisional_lihtc %>% select(GEOID_2010_trt, FIPS_st, FIPS_county, 
+    state, state_name, county, region_number, region, division_number, 
+    division, F_TOTAL_20, E_TOTPOP_20) %>% rename("F_TOTAL" = "F_TOTAL_20")
+
+# Count divisional-level SVI flags for 2020, create unified fips column
+svi_2020_divisional_county_flags_lihtc <- flag_summarize(svi_divisional_lihtc20, "E_TOTPOP_20") %>% unite("fips_county_st", FIPS_st:FIPS_county, remove = FALSE, sep="")
+
+# Identify needed columns for 2020
+colnames(svi_2020_divisional_county_flags_lihtc)[11:15] <- paste0(colnames(svi_2020_divisional_county_flags_lihtc)[11:15], "20")
+
+# Filter to needed columns for 2020 to avoid duplicate column column names
+svi_2020_divisional_county_flags_join_lihtc <- svi_2020_divisional_county_flags_lihtc %>% ungroup() %>% select("fips_county_st", all_of(colnames(svi_2020_divisional_county_flags_lihtc)[11:15]))
+ 
+# Join 2010 and 2020 data
+svi_divisional_county_flags_lihtc <- left_join(svi_2010_divisional_county_flags_lihtc, svi_2020_divisional_county_flags_join_lihtc, join_by("fips_county_st" == "fips_county_st")) 
+
+svi_divisional_county_flags_lihtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_divisional_county_lihtc <- left_join(svi_divisional_lihtc_county_sum, 
+                                        svi_divisional_county_flags_lihtc,
+                                    join_by("State" == "state", "County" == "county",
+                                            "Division" == "division"))
+
+svi_divisional_county_lihtc$post10_lihtc_project_cnt[is.na(svi_divisional_county_lihtc $post10_lihtc_project_cnt)] <- 0
+
+svi_divisional_county_lihtc$county_name <- paste0(svi_divisional_county_lihtc$County, ", ", svi_divisional_county_lihtc$State)
+
+svi_divisional_county_lihtc %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+# Mountain Division Exploratory Data Analysis
+
+## 2010 NMTC in Mountain Division 
+
+```{r}
+svi_divisional_county_nmtc_projects <- svi_divisional_county_nmtc %>% filter(post10_nmtc_project_cnt > 0)
+```
+
+
+### Data Summary Statistics
+
+
+```{r}
+summary(svi_divisional_county_nmtc_projects$flag_count10)
+```
+
+```{r}
+summary(svi_divisional_county_nmtc_projects$post10_nmtc_project_dollars)
+```
+
+
+**There is a large spread within counties receiving NMTC in the Mountain division with SVI flag counts ranging from 5 - 2558, and the NMTC dollars ranging from \$800,000 to \$225,215,967. Here we can view this in a scatterplot:**
+
+
+```{r, warning=FALSE, message=FALSE}
+# Scatterplot
+# y is our independent variable (NMTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+ggplot2::ggplot(svi_divisional_county_nmtc_projects,
+                aes(x=flag_count10,
+                    y=post10_nmtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+```
+
+Here we can also see several outliers that are skewing the medians of our data.
+
+
+### Correlation between flag count and NMTC dollars spent within counties
+
+```{r}
+# Pearson's r calculation
+cor(svi_divisional_county_nmtc_projects$flag_count10, svi_divisional_county_nmtc_projects$post10_nmtc_project_dollars, method = "pearson")
+```
+
+A Pearson's R calculation of 0.62 suggests that there is a strong positive association between the dollar amount spent in NMTC from 2011-2020 and the flag count within the Mountain Division counties in 2010.
+
+Let's look at a box plot to examine this further:
+
+
+```{r}
+boxplot(svi_divisional_county_nmtc_projects$flag_count10)
+```
+
+```{r}
+boxplot.stats(svi_divisional_county_nmtc_projects$flag_count10)$out %>% sort(decreasing = TRUE)
+```
+
+The boxplot shows most of our data lies within the lower quadrant of flag counts. Additionally, there are 6 outliers identified. There are identified here:
+
+```{r}
+svi_divisional_county_nmtc_projects %>% 
+  select(county_name, flag_count10, post10_nmtc_dollars_formatted) %>% 
+  arrange(desc(flag_count10)) %>% 
+  head(6) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+Let's examine our major outlier, Maricopa County, AZ data point further:
+
+```{r}
+
+svi_divisional_nmtc %>% filter(county == "Maricopa County") %>% select(GEOID_2010_trt, F_TOTAL_10, post10_nmtc_dollars) %>% summary()
+
+```
+
+There are 322 tracts in Maricopa County, with a median divisional flag count of 9 flags, so it makes sense for Maricopa County to have 2558 flags. This is lower than the average 47 flags in the Mountain Division. Interestingly, Maricopa County, while having the highest number of flag counts in the Mountain Division, has not received the highest amount of NMTC dollars.
+
+### K-Means Clustering
+
+```{r}
+svi_divisional_nmtc_cluster <- svi_divisional_county_nmtc_projects %>% 
+                            select(county_name, post10_nmtc_project_dollars, 
+                                   flag_count10) %>% 
+                            remove_rownames %>% 
+                            column_to_rownames(var="county_name")
+
+# Remove nulls, if in dataset
+svi_divisional_nmtc_cluster <- na.omit(svi_divisional_nmtc_cluster)
+
+
+# Scale numeric variables
+svi_divisional_nmtc_cluster <- scale(svi_divisional_nmtc_cluster)
+
+
+svi_divisional_nmtc_cluster %>% head(5)
+```
+
+
+```{r}
+set.seed(123)
+k2_nmtc_div <- kmeans(svi_divisional_nmtc_cluster, centers = 2, nstart = 25)
+set.seed(123)
+k3_nmtc_div <- kmeans(svi_divisional_nmtc_cluster, centers = 3, nstart = 25)
+set.seed(123)
+k4_nmtc_div <- kmeans(svi_divisional_nmtc_cluster, centers = 4, nstart = 25)
+set.seed(123)
+k5_nmtc_div <- kmeans(svi_divisional_nmtc_cluster, centers = 5, nstart = 25)
+```
+
+
+
+```{r}
+# plots to compare
+p_k2_nmtc_div <- factoextra::fviz_cluster(k2_nmtc_div, geom = "point", data = svi_divisional_nmtc_cluster) + ggtitle("k = 2")
+
+p_k3_nmtc_div <- factoextra::fviz_cluster(k3_nmtc_div, geom = "point", data = svi_divisional_nmtc_cluster) + ggtitle("k = 3")
+
+p_k4_nmtc_div <- factoextra::fviz_cluster(k4_nmtc_div, geom = "point",  data = svi_divisional_nmtc_cluster) + ggtitle("k = 4")
+
+p_k5_nmtc_div <- factoextra::fviz_cluster(k5_nmtc_div, geom = "point",  data = svi_divisional_nmtc_cluster) + ggtitle("k = 5")
+
+grid.arrange(p_k2_nmtc_div, p_k3_nmtc_div, p_k4_nmtc_div, p_k5_nmtc_div, nrow = 2)
+```
+
+In visually inspecting our plots, it appears that k=3 has the best grouping to the eye, with no overlap in the groups.
+
+```{r}
+elbow_plot(svi_divisional_nmtc_cluster)
+```
+
+In looking at our elbow plot, it appears that there is not much variation between point 3 and 4. This aligns well with our visual observation.
+
+
+```{r}
+p_k3_nmtc_div <- factoextra::fviz_cluster(k3_nmtc_div, geom = "point", data = svi_divisional_nmtc_cluster) + ggtitle("k = 3")
+
+p_k3_nmtc_div
+```
+
+Here we will assign these 3 clusters to our county data set:
+
+
+
+```{r}
+svi_divisional_nmtc_cluster_label <- as.data.frame(svi_divisional_nmtc_cluster) %>%
+                                  rownames_to_column(var = "county_name") %>%
+                                  as_tibble() %>%
+                                  mutate(cluster = k3_nmtc_div$cluster) %>%
+                                  select(county_name, cluster)
+
+svi_divisional_county_nmtc_projects2 <- left_join(svi_divisional_county_nmtc_projects, svi_divisional_nmtc_cluster_label, join_by(county_name == county_name))
+
+# View county counts in each cluster
+table(svi_divisional_county_nmtc_projects2$cluster)
+```
+
+**Cluster 1**
+
+```{r, warning=FALSE, message=FALSE}
+# Cluster 1 Scatterplot
+# y is our independent variable (NMTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 1) %>%
+  ggplot2::ggplot(aes(x=flag_count10,
+                    y=post10_nmtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+```
+
+
+```{r}
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 1) %>%
+  select(flag_count10,post10_nmtc_project_dollars) %>%
+  cor(method = "pearson")
+```
+
+This cluster contains the majority of our counties that received NMTC funding and shows a very weak negative, or no association correlation between flag counts from 2010 census data and money received the following decade from NMTC.
+
+Here are the counties that fall into cluster 1:
+
+```{r}
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 1) %>%
+  select(county_name, flag_count10, post10_nmtc_dollars_formatted) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+**Cluster 2**
+
+```{r}
+# Cluster 2 Scatterplot
+# y is our independent variable (NMTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 2) %>%
+  ggplot2::ggplot(aes(x=flag_count10,
+                    y=post10_nmtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+```
+
+**Cluster 2**
+
+```{r}
+
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 2) %>%
+  select(flag_count10,post10_nmtc_project_dollars) %>%
+  cor(method = "pearson")
+
+```
+
+This cluster group contained only 7 data points, and shows a moderate negative correlation (Pearson's R of -0.46) between flag count in 2010 and NMTC money received the following decade.
+
+These are our Cluster 2 counties:
+
+```{r}
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 2) %>%
+  select(county_name, flag_count10, post10_nmtc_dollars_formatted) 
+```
+
+**Cluster 3**
+
+```{r, warning=FALSE, message=FALSE}
+# Cluster 3 Scatterplot
+# y is our independent variable (NMTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 3) %>%
+  ggplot2::ggplot(aes(x=flag_count10,
+                    y=post10_nmtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+```
+
+```{r}
+
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 3) %>%
+  select(flag_count10,post10_nmtc_project_dollars) %>%
+  cor(method = "pearson")
+
+```
+
+In looking at our correlation for cluster 3 which contain our outliers, a Pearson's R score of -1 shows a high negative correlation within our cluster between flag count and money received in these 2 counties. However, we know that there are only 2 data points in this cluster.
+
+These are the 2 counties in Cluster 3:
+
+```{r}
+svi_divisional_county_nmtc_projects2 %>% 
+  filter(cluster == 3) %>%
+  select(county_name, flag_count10, post10_nmtc_dollars_formatted) 
+```
+
+**Overall, if we look at cluster 1, we see that it contains the majority of our data. It also shows that for the majority of our data points, there is almost no correlation between the amount of money received in NMTC and the SVI vulnerability flag count.**
+
+### Bivariate Mapping
+
+```{r}
+divisional_county_sf <- svi_county_map2010 %>% select(COUNTYFP, STATEFP, geometry)
+
+divisional_county_sf %>% head(5)
+```
+
+
+```{r}
+# Join our NMTC projects data with our shapefile geocoordinates
+svi_divisional_county_nmtc_sf <- left_join(svi_divisional_county_nmtc_projects, divisional_county_sf, join_by("FIPS_st" == "STATEFP", "FIPS_county" == "COUNTYFP"))
+
+svi_divisional_county_nmtc_sf %>% head(5) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Create classes for bivariate mapping 
+svi_divisional_county_nmtc_sf <- bi_class(svi_divisional_county_nmtc_sf, x = flag_count10, y = post10_nmtc_project_dollars, style = "quantile", dim = 3)
+
+# View data
+svi_divisional_county_nmtc_sf %>% head(5) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# Create map with ggplot
+svi_divisional_county_nmtc_map <- ggplot() +
+  # Map county shapefile, fill with bi_class categories
+  geom_sf(data = svi_divisional_county_nmtc_sf, mapping = aes(geometry=geometry, fill = bi_class), color = "white", size = 0.1, show.legend = FALSE) +
+  # Set to biscale palette
+  bi_scale_fill(pal = "GrPink", dim = 3) +
+  # Add state shapefiles for outline
+  geom_sf(data=divisional_st_sf, color="black", fill=NA, linewidth=.5, aes(geometry=geometry)) +
+  labs(
+    title = paste0("Correlation of 2010 ", census_division, " SVI Flag Count \n and 2011 - 2020 NMTC Tax Dollars"),
+  ) +
+  # Set them to biscale
+  bi_theme(base_size = 10)
+
+# Create biscale legend
+svi_divisional_county_nmtc_legend <- bi_legend(pal = "GrPink",
+                    dim = 3,
+                    xlab = "SVI Flag Count",
+                    ylab = "NMTC Dollars",
+                    size = 8)
+
+# Combine map with legend using cowplot
+svi_divisional_county_nmtc_bivarmap <- ggdraw() +
+  draw_plot(svi_divisional_county_nmtc_map) +
+  # Set legend location
+  draw_plot(svi_divisional_county_nmtc_legend, x= -.02,  y = -.05,
+ width=.20)
+
+
+# View map
+svi_divisional_county_nmtc_bivarmap
+```
+
+Here we can see the distribution of SVI flag counts and NMTC dollars spent in each county receiving funds. Montana, Idaho, and Wyoming received high dollars compared to low flag counts, indicated by the blue color.
+
+```{r}
+svi_divisional_county_nmtc_sf %>% filter(State %in% c("MT", "ID", "WY")) %>%
+  arrange(desc(post10_nmtc_project_dollars), flag_count10) %>% select(State, County, flag_count10, post10_nmtc_dollars_formatted) %>% head(10) 
+
+```
+
+Nevada received the most dollars in the highest need counties, indicated by the purple dark purple color.
+
+```{r}
+
+svi_divisional_county_nmtc_sf %>% filter(State %in% c("NV", "NM")) %>% select(State, County, flag_count10, post10_nmtc_dollars_formatted) %>% arrange(desc(flag_count10)) %>% head(10) 
+
+```
+
+## 2010 Low Income Housing Tax Credit Mountain Division
+
+```{r}
+
+svi_divisional_county_lihtc_projects <- svi_divisional_county_lihtc %>% filter(post10_lihtc_project_cnt > 0)
+
+svi_divisional_county_lihtc_projects %>% select(Division) %>% unique()
+
+```
+
+### Data Summary Statistics
+
+```{r}
+
+summary(svi_divisional_county_lihtc_projects$flag_count10)
+
+```
+
+```{r}
+
+summary(svi_divisional_county_lihtc_projects$post10_lihtc_project_dollars)
+
+```
+
+Filter out counties with LIHTC projects but did not receive any funding:
+
+```{r}
+
+svi_divisional_county_lihtc_projects <- svi_divisional_county_lihtc_projects %>% filter(post10_lihtc_project_dollars > 0)
+
+```
+
+```{r}
+
+summary(svi_divisional_county_lihtc_projects$flag_count10)
+
+```
+
+```{r}
+
+summary(svi_divisional_county_lihtc_projects$post10_lihtc_project_dollars)
+
+```
+
+The Mountain division counties receiving LIHTC project funding between 2011-2020, had a range of 9 to 487 SVI flags in 2010. The funding amounts ranged from \$270,127 and \$15,437,500. There is a large range between counties in the number of SVI flags in 2010 and funding dollars spent between 2011 and 2020.
+
+Let's view this data visually in a scatterplot:
+
+```{r}
+
+# Scatterplot
+# y is our independent variable (LIHTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+ggplot2::ggplot(svi_divisional_county_lihtc_projects,
+                aes(x=flag_count10,
+                    y=post10_lihtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+
+```
+
+Here we can see 1 outlier in dollars spent.
+
+### Pearson's R Correlation between SVI flag count and LIHTC dollars spent
+
+```{r}
+
+# Pearson's r calculation
+cor(svi_divisional_county_lihtc_projects$flag_count10, svi_divisional_county_lihtc_projects$post10_lihtc_project_dollars, method = "pearson")
+
+```
+
+Overall, within all the counties in the Mountain Division, there is a moderate positive correlation between SVI flags from 2010 and dollars spent on LIHTC in 2011-2020, with a Pearson's score of 0.57.
+
+Here is a boxplot of this data:
+
+```{r}
+
+boxplot(svi_divisional_county_lihtc_projects$flag_count10)
+
+```
+
+Here we can see three outliers, with high flag counts:
+
+```{r}
+
+boxplot.stats(svi_divisional_county_lihtc_projects$flag_count10)$out %>% sort(decreasing = TRUE)
+
+```
+
+```{r}
+
+svi_divisional_county_lihtc_projects %>% filter(flag_count10 == 487) %>% select(county_name, flag_count10, post10_lihtc_dollars_formatted) %>% head() 
+
+```
+
+Again, we can see that Maricopa County is also an outlier in flag counts.
+
+### K-Means Clustering
+
+```{r}
+
+svi_divisional_lihtc_cluster <- svi_divisional_county_lihtc_projects %>% 
+                            select(county_name, post10_lihtc_project_dollars, 
+                                   flag_count10) %>% 
+                            remove_rownames %>% 
+                            column_to_rownames(var="county_name")
+
+# Remove nulls, if in dataset
+svi_divisional_lihtc_cluster <- na.omit(svi_divisional_lihtc_cluster)
+
+
+# Scale numeric variables
+svi_divisional_lihtc_cluster <- scale(svi_divisional_lihtc_cluster)
+
+
+svi_divisional_lihtc_cluster %>% head(5)
+
+```
+
+Let's look at different cluster groupings:
+
+```{r}
+
+set.seed(123)
+k2_lihtc_div <- kmeans(svi_divisional_lihtc_cluster, centers = 2, nstart = 25)
+set.seed(123)
+k3_lihtc_div <- kmeans(svi_divisional_lihtc_cluster, centers = 3, nstart = 25)
+set.seed(123)
+k4_lihtc_div <- kmeans(svi_divisional_lihtc_cluster, centers = 4, nstart = 25)
+set.seed(123)
+k5_lihtc_div <- kmeans(svi_divisional_lihtc_cluster, centers = 5, nstart = 25)
+
+
+# plots to compare
+p_k2_lihtc_div <- factoextra::fviz_cluster(k2_lihtc_div, geom = "point", data = svi_divisional_lihtc_cluster) + ggtitle("k = 2")
+
+p_k3_lihtc_div <- factoextra::fviz_cluster(k3_lihtc_div, geom = "point", data = svi_divisional_lihtc_cluster) + ggtitle("k = 3")
+
+p_k4_lihtc_div <- factoextra::fviz_cluster(k4_lihtc_div, geom = "point",  data = svi_divisional_lihtc_cluster) + ggtitle("k = 4")
+
+p_k5_lihtc_div <- factoextra::fviz_cluster(k5_lihtc_div, geom = "point",  data = svi_divisional_lihtc_cluster) + ggtitle("k = 5")
+
+grid.arrange(p_k2_lihtc_div, p_k3_lihtc_div, p_k4_lihtc_div, p_k5_lihtc_div, nrow = 2)
+```
+
+Visually, 2 clusters looks to capture our data points best, but we can check an elbow plot:
+
+```{r}
+
+elbow_plot(svi_divisional_lihtc_cluster)
+
+```
+
+This elbow plot shows that 3 clusters makes sense, as the spacing does not decrease until after point 3. I will choose to use three clusters for the LIHTC data for the Mountain Division:
+
+```{r}
+
+p_k3_lihtc_div <- factoextra::fviz_cluster(k3_lihtc_div, geom = "point", data = svi_divisional_lihtc_cluster) + ggtitle("k = 3")
+
+p_k3_lihtc_div
+
+```
+
+Let's assign these clusters to our county data:
+
+```{r}
+
+svi_divisional_lihtc_cluster_label <- as.data.frame(svi_divisional_lihtc_cluster) %>%
+                                  rownames_to_column(var = "county_name") %>%
+                                  as_tibble() %>%
+                                  mutate(cluster = k3_lihtc_div$cluster) %>%
+                                  select(county_name, cluster)
+
+svi_divisional_county_lihtc_projects2 <- left_join(svi_divisional_county_lihtc_projects, svi_divisional_lihtc_cluster_label, join_by(county_name == county_name))
+
+# View county counts in each cluster
+table(svi_divisional_county_lihtc_projects2$cluster)
+
+```
+
+Again this was our scatterplot and Pearson's R for the overall data:
+
+```{r}
+
+# Overall Scatterplot
+# y is our independent variable (LIHTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+ggplot2::ggplot(svi_divisional_county_lihtc_projects2,
+                aes(x=flag_count10,
+                    y=post10_lihtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+
+```
+
+```{r}
+
+# Pearson's r calculation
+cor(svi_divisional_county_lihtc_projects2$flag_count10, svi_divisional_county_lihtc_projects2$post10_lihtc_project_dollars, method = "pearson")
+
+```
+
+**Cluster 1**
+
+```{r, warning=FALSE, message=FALSE}
+
+# Cluster 1 Scatterplot
+# y is our independent variable (LIHTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 1) %>%
+  ggplot2::ggplot(aes(x=flag_count10,
+                    y=post10_lihtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+
+```
+
+We only have 1 data point in cluster 1, so we cannot calculate correlation. Here is our county information:
+
+```{r}
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 1) %>%
+  select(county_name, flag_count10, post10_lihtc_dollars_formatted) %>% 
+  arrange(desc(flag_count10)) %>% head(10) 
+```
+
+Again, Maricopa County stands out as an outlier.
+
+**Cluster 2**
+
+```{r, warning=FALSE, message=FALSE}
+
+# Cluster 2 Scatterplot
+# y is our independent variable (LIHTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 2) %>%
+  ggplot2::ggplot(aes(x=flag_count10,
+                    y=post10_lihtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+
+```
+
+```{r}
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 2) %>%
+  select(flag_count10,post10_lihtc_project_dollars) %>%
+  cor(method = "pearson")
+
+```
+
+Cluster 2 contains all but 2 of our data points. With a Pearson's R of 0.68, there is a strong correlation between LIHTC dollars and SVI need.
+
+Here are the 12 counties in this cluster:
+
+```{r}
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 2) %>%
+  select(county_name, flag_count10, post10_lihtc_dollars_formatted) %>% 
+  arrange(desc(flag_count10)) %>% head(12) 
+
+```
+
+**Cluster 3**
+
+```{r, warning=FALSE, message=FALSE}
+
+# Cluster 3 Scatterplot
+# y is our independent variable (LIHTC Project Dollars),  
+# x is our dependent variable (SVI flag count)
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 3) %>%
+  ggplot2::ggplot(aes(x=flag_count10,
+                    y=post10_lihtc_project_dollars)) +
+        geom_point() +
+        geom_smooth(method="lm") +
+        scale_y_continuous(labels = scales::dollar_format()) 
+
+```
+
+Cluster 3 only contains 1 data point so there is no correlation information for this cluster. Here is the county information for this cluster:
+
+```{r}
+
+svi_divisional_county_lihtc_projects2 %>% 
+  filter(cluster == 3) %>%
+  select(county_name, flag_count10, post10_lihtc_dollars_formatted) %>% 
+  arrange(desc(flag_count10)) %>% head(10) 
+
+```
+
+\*\*In summary, after clustering, we pulled out 1 county outlier with a high flag count (Maricopa County, AZ) and 1 county outlier with a high dollar amount (Mesa County, CO), and our correlation between LIHTC funding received in 2011-2020 is strongly correlated with the SVI vulnerability flag count in 2010.
+
+### Bivariate Mapping
+
+```{r}
+
+# Join our LIHTC projects data with our shapefile geocoordinates
+svi_divisional_county_lihtc_sf <- left_join(svi_divisional_county_lihtc_projects, divisional_county_sf, join_by("FIPS_st" == "STATEFP", "FIPS_county" == "COUNTYFP"))
+
+svi_divisional_county_lihtc_sf %>% head(5) 
+
+```
+
+```{r}
+
+# Create classes for bivariate mapping 
+svi_divisional_county_lihtc_sf <- bi_class(svi_divisional_county_lihtc_sf, x = flag_count10, y = post10_lihtc_project_dollars, style = "quantile", dim = 3)
+
+# View data
+svi_divisional_county_lihtc_sf %>% head(5) 
+
+```
+
+```{r}
+
+# Create map with ggplot
+svi_divisional_county_lihtc_map <- ggplot() +
+  # Map county shapefile, fill with bi_class categories
+  geom_sf(data = svi_divisional_county_lihtc_sf, mapping = aes(geometry=geometry, fill = bi_class), color = "white", size = 0.1, show.legend = FALSE) +
+  # Set to biscale palette
+  bi_scale_fill(pal = "GrPink", dim = 3) +
+  # Add state shapefiles for outline
+  geom_sf(data=divisional_st_sf, color="black", fill=NA, linewidth=.5, aes(geometry=geometry)) +
+  labs(
+    title = paste0("Correlation of 2010 ", census_division, " SVI Flag Count \n and 2011 - 2020 LIHTC Tax Dollars")
+  ) +
+  # Set them to biscale
+  bi_theme(base_size = 10)
+
+# Create biscale legend
+svi_divisional_county_lihtc_legend <- bi_legend(pal = "GrPink",
+                    dim = 3,
+                    xlab = "SVI Flag Count",
+                    ylab = "LIHTC Dollars",
+                    size = 8)
+
+# Combine map with legend using cowplot
+svi_divisional_county_lihtc_bivarmap <- ggdraw() +
+  draw_plot(svi_divisional_county_lihtc_map) +
+  # Set legend location
+  draw_plot(svi_divisional_county_lihtc_legend, x= -.02,  y = -.05,
+ width=.20)
+
+
+# View map
+svi_divisional_county_lihtc_bivarmap
+
+```
+
+Here we can see that Idaho and Nevada did not receive any LIHTC project funding in 2011-2020. Again, Arizona has the counties with the highest need and the highest amount of LIHTC funding.
+
+```{r}
+
+svi_divisional_county_lihtc_sf %>% filter(State == "AZ") %>% select(State, County, flag_count10, post10_lihtc_dollars_formatted) %>% arrange(desc(flag_count10)) %>% head()
+
+```
+
+Again, Montana and Colorado received high funding dollars for a low amount of need:
+
+```{r}
+
+svi_divisional_county_lihtc_sf %>% filter(State %in% c("MT", "CO")) %>%
+  arrange(desc(post10_lihtc_project_dollars), flag_count10) %>% select(State, County, flag_count10, post10_lihtc_dollars_formatted) %>% head(10)  
+```
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+
+#Save Data Sets
+
+saveRDS(svi_divisional_lihtc, file = here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_divisional_lihtc.rds")))
+
+saveRDS(svi_national_lihtc, file = here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_national_lihtc.rds")))
+
+saveRDS(svi_divisional_nmtc, file = here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_divisional_nmtc.rds")))
+
+saveRDS(svi_national_nmtc, file = here::here(paste0("data/wrangling/", str_replace_all(census_division, " ", "_"), "_svi_national_nmtc.rds")))
+
+```

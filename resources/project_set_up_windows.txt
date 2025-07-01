@@ -1,0 +1,38 @@
+Project Set-Up Windows Computer
+
+A) Set-Up renv for unique R environment for project
+
+utils::install.packages("renv")
+renv::init()
+renv::snapshot()
+
+B) Set-Up Devtools 
+
+1) Ensure that you have rtools installed on your computer:
+   You will typically find your installation directly in your C drive with a path something like: "C:\rtools40"
+   If you don't, follow the instructions to install it:
+   https://cran.r-project.org/bin/windows/Rtools/
+
+2) Install devtools
+    utils::install.packages("devtools")
+
+3) Set up .Renviron file
+   usethis::edit_r_environ(scope = "project")
+
+Once you have your .Renviron file for your project, add the following to it (if your rtools folder is named something different, 
+update the path accordingly):
+  RENV_PATHS_RTOOLS = "C:\rtools40"
+  
+See renv for details:
+https://rstudio.github.io/renv/reference/paths.html
+     
+C) Install here package
+utils::install.packages("here")
+
+D) Install tidyverse
+utils::install.packages("tidyverse")
+
+E) Install pdftools
+utils::install.packages( c("pdftools"), type="binary")
+
+

@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="generator" content="pandoc" />
+
+        <meta name="author" content="Drew Radovich" />
+    
+        <meta name="date" content="2025-04-12" />
+    
+    <title>Pacific Division SVI Infographics and Choropleth Maps</title>
+
+        <script src="lab03-radovich_files/header-attrs-2.29/header-attrs.js"></script>
+        <script src="lab03-radovich_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="lab03-radovich_files/bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+        <script src="lab03-radovich_files/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+        <script src="lab03-radovich_files/navigation-1.1/tabsets.js"></script>
+        <script src="lab03-radovich_files/navigation-1.1/codefolding.js"></script>
+        <link href="lab03-radovich_files/magnific-popup-1.1.0/magnific-popup.css" rel="stylesheet" />
+        <script src="lab03-radovich_files/magnific-popup-1.1.0/jquery.magnific-popup.min.js"></script>
+        <link href="lab03-radovich_files/downcute-0.1/downcute.css" rel="stylesheet" />
+        <link href="lab03-radovich_files/downcute-0.1/downcute_fonts_embed.css" rel="stylesheet" />
+        <script src="lab03-radovich_files/downcute-0.1/downcute_styles.js"></script>
+        <script src="lab03-radovich_files/downcute-0.1/downcute.js"></script>
+        <script src="lab03-radovich_files/prism-1.22/prism.js"></script>
+        <script src="lab03-radovich_files/kePrint-0.0.1/kePrint.js"></script>
+        <link href="lab03-radovich_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
+    
+    
+    
+    
+    <!-- tabsets -->
+    <script>
+      $(document).ready(function () {
+	  window.buildTabsets("toc");
+      });
+      $(document).ready(function () {
+	  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+	      $(this).parent().toggleClass('nav-tabs-open')
+	  });
+      });
+    </script>
+
+    <!-- code folding -->
+        <script>
+      $(document).ready(function () {
+	  	  	  window.initializeCodeFolding("show" === "show");
+	        });
+    </script>
+    
+    <!-- code download -->
+    
+    <!-- tabsets dropdown -->
+
+    <style type="text/css">
+      .tabset-dropdown > .nav-tabs {
+	  display: inline-table;
+	  max-height: 500px;
+	  min-height: 44px;
+	  overflow-y: auto;
+	  background: white;
+	  border: 1px solid #ddd;
+	  border-radius: 4px;
+      }
+      
+      .tabset-dropdown > .nav-tabs > li.active:before {
+	  content: "";
+	  font-family: 'Glyphicons Halflings';
+	  display: inline-block;
+	  padding: 10px;
+	  border-right: 1px solid #ddd;
+      }
+      
+      .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+	  content: "&#xe258;";
+	  border: none;
+      }
+      
+      .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+	  content: "";
+	  font-family: 'Glyphicons Halflings';
+	  display: inline-block;
+	  padding: 10px;
+	  border-right: 1px solid #ddd;
+      }
+      
+      .tabset-dropdown > .nav-tabs > li.active {
+	  display: block;
+      }
+
+      .tabset-dropdown > .nav-tabs > li.active a {
+  	  padding: 0 15px !important;
+      }
+
+      .tabset-dropdown > .nav-tabs > li > a,
+      .tabset-dropdown > .nav-tabs > li > a:focus,
+      .tabset-dropdown > .nav-tabs > li > a:hover {
+	  border: none;
+	  display: inline-block;
+	  border-radius: 4px;
+	  background-color: transparent;
+      }
+      
+      .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+	  display: block;
+	  float: none;
+      }
+      
+      .tabset-dropdown > .nav-tabs > li {
+	  display: none;
+	  margin-left: 0 !important;
+      }
+    </style>
+    
+</head>
+
+<body class="preload">
+
+   	
+               <!-- downcute start -->   
+   <div id="docute" class="Root theme-default">
+     <div class="Page layout-narrow">
+      <div class="Wrap">
+        <div class="Sidebar">
+          <div class="SidebarItems" id="toc">
+            <ul>
+            <li><a href="#data" id="toc-data">Data</a></li>
+            <li><a href="#socieconomic-status-infographics"
+            id="toc-socieconomic-status-infographics">Socieconomic
+            Status Infographics</a></li>
+            <li><a href="#household-characteristics-infographics"
+            id="toc-household-characteristics-infographics">Household
+            Characteristics Infographics</a></li>
+            <li><a
+            href="#racial-and-ethnic-minority-status-infographics"
+            id="toc-racial-and-ethnic-minority-status-infographics">Racial
+            and Ethnic Minority Status Infographics</a></li>
+            <li><a href="#housing-type-and-transportation-infographics"
+            id="toc-housing-type-and-transportation-infographics">Housing
+            Type and Transportation Infographics</a></li>
+            <li><a href="#choropleth-maps"
+            id="toc-choropleth-maps">Choropleth Maps</a>
+            <ul>
+            <li><a href="#svi-flag-to-population-ratio-map"
+            id="toc-svi-flag-to-population-ratio-map">2010 SVI Flag to
+            Population Ratio Map</a></li>
+            <li><a href="#svi-flag-to-population-ratio-map-1"
+            id="toc-svi-flag-to-population-ratio-map-1">2020 SVI Flag to
+            Population Ratio Map</a></li>
+            </ul></li>
+            </ul>
+          </div>
+          <div data-position="sidebar:post-end" class="InjectedComponents"><div class="dark-theme-toggler"><div class="toggle "><div class="toggle-track"><div class="toggle-track-check"><img  src="data:image/png;base64,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" role="presentation" style="pointer-events: none;" width="16" height="16"></div> <div class="toggle-track-x"><img src="data:image/png;base64,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" role="presentation" style="pointer-events: none;" width="16" height="16"></div></div> <div class="toggle-thumb"></div></div> <input type="checkbox" aria-label="Switch between Dark and Default theme" class="toggler-screen-reader-only"></div></div>
+        </div>
+        <div class="Main">
+          <div class="Content" id="content"> 
+   
+      <div class="btn-group pull-right">
+     <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+     <ul class="dropdown-menu" style="min-width: 50px;">
+	    	    <li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+	    <li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+	    	    	         </ul>
+   </div>
+   
+        
+      <h1 class="title">Pacific Division SVI Infographics and Choropleth
+Maps</h1>
+      
+      <p class="authors">
+           <span class="glyphicon glyphicon-user"></span> Drew Radovich
+      </p>
+         <p class="date"><span class="glyphicon glyphicon-calendar"></span> 2025-04-12</p>
+           
+
+   
+      
+   
+<!-- Don't indent these lines or it will mess pre blocks indentation --> 
+<div class="page-content has-page-title">
+<style type="text/css">
+img {
+  border: 50px solid white;
+}
+</style>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>Here is the summary data for SVI vulnerability in the Pacific
+Division compared to nationally for the years 2010 and 2020. The
+percents of social vulnerability in the Pacific Division closely match
+the national averages with a few key exceptions. For instance, the
+Pacific division has a significantly higher percent of limited English
+speakers than the national average as well as a higher percent minority
+race/ethnicity. The Pacific Division also has a slightly lower percent
+population with high school diplomas. For both 2010 and 2020, the
+Pacific Division had nearly double the percent of population living in
+crowded living spaces than the national average. For healthcare, the
+percent of population covered increased 10% from 2010, following the
+national trend.</p>
+<div
+style="border: 1px solid #ddd; padding: 5px; overflow-x: scroll; width:100%; ">
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+division
+</th>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+pct in poverty
+</th>
+<th style="text-align:right;">
+pct not in poverty
+</th>
+<th style="text-align:right;">
+pct unemployed
+</th>
+<th style="text-align:right;">
+pct employed
+</th>
+<th style="text-align:right;">
+pct housing cost-burdened
+</th>
+<th style="text-align:right;">
+pct not housing cost-burdened
+</th>
+<th style="text-align:right;">
+pct adults without high school diploma
+</th>
+<th style="text-align:right;">
+pct adults with high school diploma
+</th>
+<th style="text-align:right;">
+pct age 17 &amp; under
+</th>
+<th style="text-align:right;">
+pct age 18-64
+</th>
+<th style="text-align:right;">
+pct age 65+
+</th>
+<th style="text-align:right;">
+pct single parent families
+</th>
+<th style="text-align:right;">
+pct other families
+</th>
+<th style="text-align:right;">
+pct limited English speakers
+</th>
+<th style="text-align:right;">
+pct proficient English speakers
+</th>
+<th style="text-align:right;">
+pct Minority race/ethnicity
+</th>
+<th style="text-align:right;">
+pct Non-Hispanic White race/ethnicity
+</th>
+<th style="text-align:right;">
+pct in multi-unit housing
+</th>
+<th style="text-align:right;">
+pct in mobile housing
+</th>
+<th style="text-align:right;">
+pct in other housing
+</th>
+<th style="text-align:right;">
+pct in crowded living spaces
+</th>
+<th style="text-align:right;">
+pct in non-crowded living spaces
+</th>
+<th style="text-align:right;">
+pct with no vehicle access
+</th>
+<th style="text-align:right;">
+pct with vehicle access
+</th>
+<th style="text-align:right;">
+pct in group living quarters
+</th>
+<th style="text-align:right;">
+pct not in group living quarters
+</th>
+<th style="text-align:right;">
+pct without health insurance
+</th>
+<th style="text-align:right;">
+pct with health insurance
+</th>
+<th style="text-align:right;">
+pct disabled civilians
+</th>
+<th style="text-align:right;">
+pct not disabled civilians
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+United States
+</td>
+<td style="text-align:right;">
+2010
+</td>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:right;">
+77
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+64
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+85
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+63
+</td>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+83
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+95
+</td>
+<td style="text-align:right;">
+35
+</td>
+<td style="text-align:right;">
+65
+</td>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+80
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+97
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+91
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+97
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+85
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+85
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Pacific Division
+</td>
+<td style="text-align:right;">
+2010
+</td>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:right;">
+77
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+91
+</td>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:right;">
+55
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+83
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+64
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+83
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+91
+</td>
+<td style="text-align:right;">
+52
+</td>
+<td style="text-align:right;">
+48
+</td>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+79
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+98
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+83
+</td>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+87
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+United States
+</td>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:right;">
+79
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+95
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+70
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+89
+</td>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+62
+</td>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+84
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+96
+</td>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:right;">
+60
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+80
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+97
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+98
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+91
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+85
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Pacific Division
+</td>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:right;">
+80
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+94
+</td>
+<td style="text-align:right;">
+38
+</td>
+<td style="text-align:right;">
+62
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+86
+</td>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+63
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+85
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+79
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+98
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+86
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="socieconomic-status-infographics" class="section level2">
+<h2>Socieconomic Status Infographics</h2>
+<p>The following waffle charts show information on the Socioeconomic
+status of the Pacific Division. Each icon represents 1% of the
+population. The demographics that are included in socioeconomic status
+are poverty, unemployment rates, housing cost-burdened, high school
+education, and health insurance coverage. The most notable differences
+in the Pacific Division and nation are the percent of population
+experiencing housing cost-burdens and the percent of high school
+diplomas.</p>
+<div class="float">
+<img src="imgs/infographic_SES_Pacific_Division.png"
+alt="Alt-text: Socioeconomic Status Infographic" />
+<div class="figcaption">Alt-text: Socioeconomic Status Infographic</div>
+</div>
+</div>
+<div id="household-characteristics-infographics" class="section level2">
+<h2>Household Characteristics Infographics</h2>
+<p>These infographics look at age, disability status, family types, and
+language, the characteristics that make up the Housing category of the
+SVI. For the Pacific Division, age categories closely mirror the
+national averages, while there is a significantly higher percentage of
+non-English speakers compared to the national population.</p>
+<div class="float">
+<img src="imgs/infographic_HHChar_Pacific_Division.png"
+alt="Alt-text: Household Characteristics Infographic" />
+<div class="figcaption">Alt-text: Household Characteristics
+Infographic</div>
+</div>
+</div>
+<div id="racial-and-ethnic-minority-status-infographics"
+class="section level2">
+<h2>Racial and Ethnic Minority Status Infographics</h2>
+<p>For racial and ethnic minority groups, there is a significantly
+higher (17% in 2010 and 15% in 2020) percent population in the Pacific
+Division when compared to the national average. This makes sense with
+the higher amount of non-English speakers that were observed in the
+previous category.</p>
+<div class="float">
+<img src="imgs/infographic_REM_Pacific_Division.png"
+alt="Alt-text: Racial and Ethnic Minority Infographic" />
+<div class="figcaption">Alt-text: Racial and Ethnic Minority
+Infographic</div>
+</div>
+</div>
+<div id="housing-type-and-transportation-infographics"
+class="section level2">
+<h2>Housing Type and Transportation Infographics</h2>
+<p>The last category of the SVI is housing type and transportation which
+takes into account group living quarters, crowded living spaces,
+multi-unit housing, and vehicle access. The Pacific Division has
+slightly less percent population living in mobile housing for 2010 and
+2020, with those numbers choosing multi-unit housing instead. This is
+also reflected in the slightly higher percent population living in
+crowded spaces compared to the rest of the nation. Vehicle access for
+the Pacific Division is only a few percentage points higher than the
+national average.</p>
+<div class="float">
+<img src="imgs/infographic_HAT_Pacific_Division.png"
+alt="Alt-text: Housing and Transportation Infographic" />
+<div class="figcaption">Alt-text: Housing and Transportation
+Infographic</div>
+</div>
+</div>
+<div id="choropleth-maps" class="section level2">
+<h2>Choropleth Maps</h2>
+<div id="svi-flag-to-population-ratio-map" class="section level3">
+<h3>2010 SVI Flag to Population Ratio Map</h3>
+<p>The following maps look at Social Vulnerabilty per 1000 people at the
+county level for the Pacific Division in 2010. The index is a flag count
+to population ratio to account for size and population differences
+withing counties. Naturally, larger counties will produce more flags,
+using the ratio creates an equitable comparison. On the map, we can see
+that Alaska is at a high percent of social vulnerability as a whole,
+most likely due to the lower population and geographic difficulties. The
+Los Angeles area and surrounding counties are also at a higher risk when
+compared to major metropolitan areas in Washington and Oregon (i.e,
+Seattle and Portland.)</p>
+<iframe align="center" width="1000" height="1000" src="./imgs/flag_pop_quantile2010_Pacific_Divisionmap.html">
+</iframe>
+</div>
+<div id="svi-flag-to-population-ratio-map-1" class="section level3">
+<h3>2020 SVI Flag to Population Ratio Map</h3>
+<p>Here is the same map for 2020 data. Again, a ratio of flags to
+population was used to account for differences in county size. The
+results are mostly similar with a couple counties crossing into the next
+percentile of social vulnerability, noticeably in Eastern Washington and
+Oregon, as well as Northern California. Major metropolitan areas did not
+change drastically in their risk of social vulnerability.</p>
+<iframe align="center" width="1000" height="1000" src="./imgs/flag_pop_quantile2020_Pacific_Divisionmap.html">
+</iframe>
+</div>
+</div>
+</div>
+
+   
+   
+              </div>
+  </div>
+  </div>
+  </div>
+   
+      
+
+  <script>
+    $(document).ready(function () {
+
+		// add bootstrap table styles to pandoc tables
+	$('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+		
+ 		
+		$('#content img:not(.no-lightbox)').addClass("image-lb");
+	$('#content').magnificPopup({
+	    type:'image',
+	    closeOnContentClick: false,
+	    closeBtnInside: false,
+	    delegate: '.image-lb',
+	    gallery: {enabled: false },
+	    image: {
+	        verticalFit: true,
+		titleSrc: 'alt'
+	    }
+ 	});
+ 	    });
+  </script>
+
+
+
+    <!-- dynamically load mathjax for compatibility with self-contained -->
+  <script>
+    (function () {
+	var script = document.createElement("script");
+	script.type = "text/javascript";
+	script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+	document.getElementsByTagName("head")[0].appendChild(script);
+    })();
+  </script>
+  
+</body>
+</html>

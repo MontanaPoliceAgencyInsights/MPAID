@@ -1,0 +1,684 @@
+---
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+    preserve_yaml: true
+  rmdformats::downcute:
+    toc_depth: 3
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: "tango"
+    code_folding: show
+always_allow_html: true
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding,
+  output_format = "all") })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Library
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Load packages
+library(here)        # relative filepaths for reproducibility
+library(tidyverse)   # data wrangling
+library(stringi)     # string wrangling
+library(kableExtra)  # table formatting
+library(tidycensus)  # census data
+```
+
+# API Key and Variable Import
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+# Load API key, assign to TidyCensus Package
+source(here::here("analysis/password.R"))
+census_api_key(census_api_key)
+```
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+import::here( "author",
+              "census_division",
+              "census_regions",
+              "fips_region_assignment",
+              "rank_variables",
+              "svi_theme_variables",
+              "svi_theme_flags",
+             # notice the use of here::here() that points to the .R file
+             # where all these R objects are created
+             .from = here::here("analysis/project_data_steps_knopp.R"),
+             .character_only = TRUE)
+```
+
+
+
+# Data
+
+```{r}
+# Load SVI data sets
+svi_2010 <- readRDS(here::here("data/raw/Census_Data_SVI/svi_2010_trt10.rds"))
+svi_2020 <- readRDS(here::here("data/raw/Census_Data_SVI/svi_2020_trt10.rds"))
+```
+
+
+
+```{r}
+census_regions %>% colnames()
+```
+
+```{r}
+
+# Set census regions column names to lowercase
+colnames(census_regions) <- colnames(census_regions) %>% tolower()
+
+census_regions %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+
+## 2010 Data
+
+```{r}
+svi_2010 %>% colnames()
+```
+
+```{r}
+svi_2010 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+svi_2010 %>% nrow()
+```
+
+## 2020 Data
+
+```{r}
+svi_2020 %>% colnames()
+```
+
+```{r}
+svi_2020 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+svi_2020 %>% nrow()
+```
+
+# Data Wrangling
+
+
+```{r}
+
+svi_2010 <- fips_region_assignment(svi_2010)
+
+svi_2010 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+
+```
+
+```{r}
+svi_2020 <- fips_region_assignment(svi_2020)
+
+svi_2020 %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+
+```
+
+
+## National
+
+```{r}
+# National
+svi_2010_national <- rank_variables(svi_2010)
+svi_2010_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+# National
+svi_2020_national <- rank_variables(svi_2020)
+svi_2020_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+## Regional
+
+```{r}
+# Regional
+svi_2010_regional <- rank_variables(svi_2010, rank_by = "regional", location = "West Region")
+svi_2010_regional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+# Regional
+svi_2020_regional <- rank_variables(svi_2020, rank_by = "regional", location = "West Region")
+svi_2020_regional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+## Divisional
+
+```{r}
+# Divisional
+svi_2010_divisional <- rank_variables(svi_2010, rank_by = "divisional", location = "Mountain Division")
+svi_2010_divisional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+# Divisional
+svi_2020_divisional <- rank_variables(svi_2020, rank_by = "divisional", location = "Mountain Division")
+svi_2020_divisional %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+## State
+
+```{r}
+# State
+svi_2010_state <- rank_variables(svi_2010, rank_by = "state", location = "MT")
+svi_2010_state %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+```{r}
+# State
+svi_2020_state <- rank_variables(svi_2020, rank_by = "state", location = "MT")
+svi_2020_state %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+## County
+
+```{r}
+# County
+svi_2010_county <- rank_variables(svi_2010, rank_by = "county", location = "Silver Bow county", state_abbr = "MT")
+svi_2010_county %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+# County
+svi_2020_county <- rank_variables(svi_2020, rank_by = "county", location = "Silver Bow County", state = "MT")
+svi_2020_county %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+Add theme variables
+
+```{r}
+#Add theme variables 2010
+svi_2010_national <- svi_theme_variables(svi_2010_national)
+svi_2010_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_2020_national <- svi_theme_variables(svi_2020_national)
+svi_2020_national %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+Add theme flags
+
+```{r}
+svi_2010_national <- svi_theme_flags(svi_2010_national, .90)
+svi_2010_national %>% arrange(desc(F_TOTAL)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+```{r}
+svi_2020_national <- svi_theme_flags(svi_2020_national, .90)
+svi_2020_national %>% arrange(desc(F_TOTAL)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+# Data Analysis
+
+## Question 1:
+From a data science project management standpoint, how do you believe that functions are most useful? Can you think of scenarios in your current work or previous data projects where it would have been helpful to implement functions? Can you think of scenarios where functions are not the most useful strategy for processing data?
+
+    -Functions are most useful when you want to use the same code over and over again. This is especially 
+    useful for projects that require a lot of data wrangling. Since we are running the data through the 
+    same wrangling functions, but for different regional areas (national, state, division, county, etc.) 
+    saving our functions in the data steps file is extremely convenient. This is also great for teams and
+    projects where multiple people are using the functions, so that the results can be replicated using
+    the same, or different data. Fuctions would not be as useful if the user has no intention of replicating
+    the data wrangling, and could be time-consuming if not needed.
+    
+    
+## Question 2:    
+Describe the CDC SVI index. What is it and how do we intend to use it for our project?
+
+    -The CDC's social vulnerability index (SVI) measures how vulnerable a neighborhood is in the event of
+    an emergency situation, such as a natural disaster or health outbreak. It measures vulnerable populations
+    in terms of four categories: housing type and transportation, socioeconomic status, household characteristics
+    and racial/ethnic minority status. For this project, we are going to see how two tax credit programs impact
+    the SVI across different neighborhoods.
+
+## Question 3:
+Nationally, what are the most & least vulnerable tracts by THEME1, THEME2, THEME3, THEME4, OVERALL for 2020 and 2010.
+
+### Theme1: SES Most Vulnerable
+
+2010
+```{r}
+svi_2010_national %>% arrange(desc(RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(desc(RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme1: SES Least Vulnerable
+
+2010
+```{r}
+svi_2010_national %>% arrange((RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(RPL_THEME1) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme2: Household Characteristics Most Vulnerable
+
+2010
+```{r}
+svi_2010_national %>% arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme2: Household Characteristics Least Vulnerable
+
+2010
+```{r}
+svi_2010_national %>% arrange(RPL_THEME2) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(RPL_THEME2) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme3: Racial & Ethnic Minority Status
+
+2010
+```{r}
+svi_2010_national %>% arrange(desc(RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(desc(RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme3: Racial & Ethnic Minority Status
+
+2010
+```{r}
+svi_2010_national %>% arrange(RPL_THEME3) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(RPL_THEME3) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme4: Housing Type & Transportation
+
+2010
+```{r}
+svi_2010_national %>% arrange(desc(RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(desc(RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme4: Housing Type & Transportation
+
+2010
+```{r}
+svi_2010_national %>% arrange((RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange((RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Overall SVI
+
+2010
+```{r}
+svi_2010_national %>% arrange(desc(RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange(desc(RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Overall SVI
+
+2010
+```{r}
+svi_2010_national %>% arrange((RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_national %>% arrange((RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+## Question 4:
+For your division, what are the most & least vulnerable tracts by THEME1, THEME2, THEME3, THEME4, OVERALL. Do they belong to certain divisions/states?
+
+### Mountain Division
+```{r}
+
+svi_2010_divisional <- svi_theme_variables(svi_2010_divisional)
+svi_2020_divisional <- svi_theme_variables(svi_2020_divisional)
+```
+
+
+```{r}
+
+svi_2010_divisional <- svi_theme_flags(svi_2010_divisional, .90)
+svi_2020_divisional <- svi_theme_flags(svi_2020_divisional, .90)
+```
+
+### Theme1: SES Divisional Most Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme1: SES Divisional Least Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme2: Household Characteristics Divisional Most Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme2: Household Characteristics Divisional Least Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 3: Racial & Ethnic Minority Status Divisional Most Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme 3: Racial & EThnic Minority Status Divisional Least Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 4: Housing & Transportation Divisional Most Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme 4: Housing & Transporation Divisional Least Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEME4)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Total SVI: Divisional Most Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Total SVI: Divisional Least Vulnerable
+
+2010
+```{r}
+svi_2010_divisional %>% filter(division == "Mountain Division") %>%arrange((RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(RPL_THEMES) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+    -The most vulnerable tracts in the Moutain Division belong to Laramie County, WY, and Tooele, Salt Lake,
+    and Utah counties in Utah. The least vulnerable tracts changed in 2010, but were Summit County, Utah, 
+    Glacier County, Montana, and Douglas County, CO in 2010. They switched completely in 2020 to Weld County,
+    CO, Clark County, NV, and Salt Lake County, UT.
+
+
+## Question 5:
+
+State Total SVI Most Vulnerable:
+```{r}
+svi_2020_divisional %>% filter(division == "Mountain Division") %>%arrange(desc(RPL_THEMES))  %>% head(5) %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+    -Utah has the most vulnerable tracts for total SVI in the top 5 & 10, so I chose it as the most
+    vulnerable state to analyze.
+    
+    
+### Utah  
+
+
+```{r}
+
+svi_2010_state <- rank_variables(svi_2010, rank_by = "state", location = "UT")
+svi_2020_state <- rank_variables(svi_2020, rank_by = "state", location = "UT")
+```
+
+```{r}
+
+svi_2010_state <- svi_theme_variables(svi_2010_state)
+svi_2020_state <- svi_theme_variables(svi_2020_state)
+```
+
+```{r}
+
+svi_2010_divisional <- svi_theme_flags(svi_2010_state, .90)
+svi_2020_divisional <- svi_theme_flags(svi_2020_state, .90)
+```
+
+### Theme 1: SES Utah Most VUlnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange(desc(RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange(desc(RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 1: SES Utah Least Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange((RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange((RPL_THEME1)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+
+### Theme 2: Household Characteristics Utah Most Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 2: Household Characteristics Utah Least Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange((RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange((RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 3: Racial & Ethnic Minority Status Utah Most Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange(desc(RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange(desc(RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 3: Racial & Ethnic Minority Status Utah Least Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange((RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange((RPL_THEME3)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 4: Housing & Transporation Utah Most Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange(desc(RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Theme 4: Housing & Transportation Utah Least Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange((RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange((RPL_THEME2)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Total SVI: Utah Most Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange(desc(RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange(desc(RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+### Total SVI:  Utah Least Vulnerable 
+
+2010
+```{r}
+svi_2010_state %>% arrange((RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+2020
+```{r}
+svi_2020_state %>% arrange((RPL_THEMES)) %>% head() %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%")
+```
+
+    -The most vulnerable tracts in Utah are in Utah, Toole, and Salt Lake Counties. Interestly, the 
+    least vulnerable tracts are in Davis and also Salt Lake County.
