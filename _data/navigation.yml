@@ -6,7 +6,7 @@ main:
     url: /docs/about_team/
   - title: "Shiny Dashboard"
     url: "https://runknopp.shinyapps.io/USArrestDashboard/"
-    - title: "Evaluation Report"
+  - title: "Evaluation Report"
     url: /evaluation_report/
 
 sidebar:
