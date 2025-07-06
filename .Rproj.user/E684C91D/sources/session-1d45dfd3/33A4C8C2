@@ -3,7 +3,7 @@
     "path": "C:/Users/knopp/OneDrive/Desktop/PAF 593/Website/MPAID/docs/about_team.md",
     "project_path": "docs/about_team.md",
     "type": "markdown",
-    "hash": "2707783199",
+    "hash": "2399293436",
     "contents": "",
     "dirty": false,
     "created": 1751815327823.0,
@@ -12,15 +12,20 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "9,7",
-        "scrollLine": "38"
+        "cursorPosition": "97,6",
+        "scrollLine": "68",
+        "rmdVisualMode": "false",
+        "rmdVisualWrapConfigured": "true",
+        "docOutlineVisible": "0",
+        "rmdVisualCollapsedChunks": "",
+        "rmdVisualModeLocation": "2:750"
     },
     "folds": "",
-    "lastKnownWriteTime": 1751818776,
+    "lastKnownWriteTime": 1751819328,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1751818776236,
+    "last_content_update": 1751819329009,
     "read_only": false,
     "read_only_alternatives": []
 }
