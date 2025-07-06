@@ -114,5 +114,42 @@ hr {
       <p><strong>Agency Size:</strong> 45 Officers</p>
       <p><strong>CBA:</strong> Yes</p>
       <p>Visit their <a href="https://co.silverbow.mt.us/197/Law-Enforcement">website</a> and <a href="https://www.co.silverbow.mt.us/DocumentCenter/View/20158/Law-Enforcement-2023-2025?bidId=">CBA</a></p>
-  </div>
+    </div>
+  
+    <div>
+      <h2>COLUMBUS</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Columbus.jpg" alt="Columbus" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Stillwater County</p>
+      <p><strong>Population:</strong> 1857</p>
+      <p><strong>Agency Size:</strong> 4 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://www.townofcolumbus.com/departments/columbus-police-department/">website</a> and <a href="https://montanapoliceagencyinsights.github.io/MPAID/docs/cbas/Columbus.pdf">CBA</a></p>
+    </div>
+    
+    <div>
+      <h2>DILLON</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Dillon.jpg" alt="Dillon" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Beaverhead</p>
+      <p><strong>Population:</strong> 3880</p>
+      <p><strong>Agency Size:</strong> 10 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://www.dillonmt.org/">website</a> and <a href="https://montanapoliceagencyinsights.github.io/MPAID/docs/cbas/Columbus.pdf">CBA</a></p>
+    </div>
+    
+    <div>
+      <h2>GLASGOW</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Glasgow.jpg" alt="Glasgow" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Beaverhead</p>
+      <p><strong>Population:</strong> 3880</p>
+      <p><strong>Agency Size:</strong> 10 Officers</p>
+      <p><strong>CBA:</strong> Unknown</p>
+      <p>Visit their <a href="https://www.cityofglasgowmt.com/services3">website</a>
+    </div>
+  
 </div>
