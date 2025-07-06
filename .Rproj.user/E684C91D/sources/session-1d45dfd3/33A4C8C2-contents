@@ -1,6 +1,6 @@
 ---
-title: "About Us"
-subtitle: "PAF 515 Spring 2024 Team 00"
+title: "MPPA Members"
+subtitle: "Our Agencies"
 layout: splash
 toc: true
 ---
@@ -60,12 +60,11 @@ hr {
       <h2>BAKER</h2>
       <figure>
         <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Baker.jpg" alt="Baker" class="rounded-corners" />
-        <figcaption>Alt-text: Baker Badge</figcaption>
       </figure>
       <p><strong>County:</strong> Fallon County</p>
       <p><strong>Population:</strong> 1802</p>
       <p><strong>Agency Size:</strong> 5 Officers</p>
-      <p><strong>Collective Bargaining Agreement:</strong> None</p>
+      <p><strong>CBA:</strong> None</p>
       <p>Visit their <a href="https://www.bakermontana.us/">website</a></p>
     </div>
 
@@ -73,12 +72,11 @@ hr {
       <h2>BELGRADE</h2>
       <figure>
         <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Belgrade.jpg" alt="Belgrade" class="rounded-corners" />
-        <figcaption>Alt-text: Belgrade Badge</figcaption>
       </figure>
       <p><strong>County:</strong> Gallatin County</p>
       <p><strong>Population:</strong> 12741</p>
       <p><strong>Agency Size:</strong> 22 Officers</p>
-      <p><strong>Collective Bargaining Agreement:</strong> Yes</p>
+      <p><strong>CBA:</strong> Yes</p>
       <p>Visit their <a href="https://www.belgrademt.gov/158/Police">website</a> and <a href="https://www.belgrademt.gov/DocumentCenter/View/2807/BPOA-Collective-Bargaining-Agreement-FY26-FY28?bidId=">CBA</a></p>
     </div>
 
@@ -86,13 +84,35 @@ hr {
       <h2>BILLINGS</h2>
       <figure>
         <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Billings.jpg" alt="Billings" class="rounded-corners" />
-        <figcaption>Alt-text: Billings Badge</figcaption>
       </figure>
       <p><strong>County:</strong> Yellowstone County</p>
-      <p><strong>Population:</strong> 117116</p>
-      <p><strong>Agency Size:</strong> 90 Officers</p>
-      <p><strong>Collective Bargaining Agreement:</strong> Yes</p>
-      <p>Visit their <a href="https://www.billingsmt.gov/">website</a></p>
+      <p><strong>Population:</strong> 121483</p>
+      <p><strong>Agency Size:</strong> 162 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://www.billingsmt.gov/2882/Police">website</a> and <a href="https://www.billingsmt.gov/DocumentCenter/View/47011/Billings-MFPE-Police-CBA-with-2021-2025-CLEAN">CBA</a></p>
     </div>
+    
+    <div>
+      <h2>BOZEMAN</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Bozeman.jpg" alt="Billings" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Gallatin County</p>
+      <p><strong>Population:</strong> 57894</p>
+      <p><strong>Agency Size:</strong> 69 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://www.bozeman.net/departments/police">website</a> and <a href="https://www.mfpe.org/wp-content/uploads/2022/11/City-of-Bozeman-Employees-Local-7773-2022-2025-CBA.pdf">CBA</a></p>
+    </div>
+    
+    <div>
+      <h2>BUTTE-SILVER BOW</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Butte.jpg" alt="Butte-Silver Bow" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Silver Bow County</p>
+      <p><strong>Population:</strong> 36134</p>
+      <p><strong>Agency Size:</strong> 45 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://co.silverbow.mt.us/197/Law-Enforcement">website</a> and <a href="https://www.co.silverbow.mt.us/DocumentCenter/View/20158/Law-Enforcement-2023-2025?bidId=">CBA</a></p>
   </div>
 </div>
