@@ -35,8 +35,8 @@ figure {
 
 <figure>
 <img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Baker.webp"
-alt="Alt-text: Dodson icon" class = "rounded-corners" />
-<figcaption aria-hidden="true">Alt-text: Dodson Photo</figcaption>
+alt="Alt-text: Baker" class = "rounded-corners" />
+<figcaption aria-hidden="true">Alt-text: Baker Badge</figcaption>
 </figure>
 
 <br>
@@ -50,6 +50,28 @@ alt="Alt-text: Dodson icon" class = "rounded-corners" />
 **Collective Bargaining Agreement**: None
 
 Visit their [website](https://www.bakermontana.us/)
+
+<hr>
+
+## BELGRADE
+
+<figure>
+<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Belgrade.png"
+alt="Alt-text: Belgrade" class = "rounded-corners" />
+<figcaption aria-hidden="true">Alt-text: Belgrade Badge</figcaption>
+</figure>
+
+<br>
+
+**County**: Gallatin County
+
+**Population**: 12741
+
+**Agency Size**: 22 Officers
+
+**Collective Bargaining Agreement**: Yes
+
+Visit their [website](https://www.belgrademt.gov/158/Police) and [CBA](https://www.belgrademt.gov/DocumentCenter/View/2807/BPOA-Collective-Bargaining-Agreement-FY26-FY28?bidId=).
 
 <hr>
 
