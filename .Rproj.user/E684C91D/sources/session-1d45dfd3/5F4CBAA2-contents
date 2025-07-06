@@ -1,0 +1,54 @@
+# main links
+main:
+  - title: "Introduction"
+    url: index
+  - title: "Members"
+    url: /docs/about_team/
+  - title: "Shiny Dashboard"
+    url: "https://runknopp.shinyapps.io/USArrestDashboard/"
+  - title: "Evaluation Report"
+    url: /evaluation_report/
+
+sidebar:
+  - title: Mountain Division
+    children:
+      - title: "Introduction"
+        url: /docs/mountain_division/lab01_knopp/
+      - title: "Social Vulnerability Index"
+        url: /docs/mountain_division/lab02_knopp/
+      - title: "SVI Infographics and Choropleth Maps"
+        url: /docs/mountain_division/lab03_knopp/
+      - title: "Visualizing The Intervention"
+        url: /docs/mountain_division/lab04_knopp/
+      - title: "NMTC and LIHTC Evaluation"
+        url: /docs/mountain_division/lab05_knopp/
+      - title: "Results and Conclusion"
+        url: /docs/mountain_division/lab06_knopp/
+  - title: Pacific Division
+    children:
+      - title: "Introduction"
+        url: /docs/pacific_division/lab01_radovich/
+      - title: "Social Vulnerability Index"
+        url: /docs/pacific_division/lab02_radovich/
+      - title: "SVI Infographics and Choropleth Maps"
+        url: /docs/pacific_division/lab03_radovich/
+      - title: "Visualizing The Intervention"
+        url: /docs/pacific_division/lab04_radovich/
+      - title: "NMTC and LIHTC Evaluation"
+        url: /docs/pacific_division/lab05_radovich/
+      - title: "Results and Conclusion"
+        url: /docs/pacific_division/lab06_radovich/
+  - title: South Atlantic Division
+    children:
+      - title: "Introduction"
+        url: /docs/south_atlantic_division/Lab-01-Dodson/
+      - title: "Social Vulnerability Index"
+        url: /docs/south_atlantic_division/Lab-02-Dodson/
+      - title: "SVI Infographics and Choropleth Maps"
+        url: /docs/south_atlantic_division/Lab-03-Dodson/
+      - title: "Visualizing The Intervention"
+        url: /docs/south_atlantic_division/Lab-04-Dodson/
+      - title: "NMTC and LIHTC Evaluation"
+        url: /docs/south_atlantic_division/Lab-05-Dodson/
+      - title: "Results and Conclusion"
+        url: /docs/south_atlantic_division/Lab-06-Dodson/
