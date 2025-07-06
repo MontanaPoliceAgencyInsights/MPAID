@@ -34,7 +34,7 @@ figure {
 ## BAKER
 
 <figure>
-<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Baker.webp"
+<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Baker.jpg"
 alt="Alt-text: Baker" class = "rounded-corners" />
 <figcaption aria-hidden="true">Alt-text: Baker Badge</figcaption>
 </figure>
@@ -56,7 +56,7 @@ Visit their [website](https://www.bakermontana.us/)
 ## BELGRADE
 
 <figure>
-<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Belgrade.png"
+<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Belgrade.jpg"
 alt="Alt-text: Belgrade" class = "rounded-corners" />
 <figcaption aria-hidden="true">Alt-text: Belgrade Badge</figcaption>
 </figure>
@@ -74,6 +74,8 @@ alt="Alt-text: Belgrade" class = "rounded-corners" />
 Visit their [website](https://www.belgrademt.gov/158/Police) and [CBA](https://www.belgrademt.gov/DocumentCenter/View/2807/BPOA-Collective-Bargaining-Agreement-FY26-FY28?bidId=).
 
 <hr>
+
+
 
 ## Michelle Knopp
 
