@@ -1,7 +1,6 @@
 ---
-title: "About Us"
-subtitle: "PAF 515 Spring 2024 Team 00"
-#date: "03/17/2024"
+title: "MPPA Members"
+subtitle: "Agency Members"
 layout: splash
 toc: true
 ---
@@ -10,9 +9,8 @@ toc: true
 
 <style>
 img {  
-width: 180px;  
-height: 180px;
-<!---height: auto;--->  
+  width: 180px;  
+  height: 180px;  
 }  
 
 img.rounded-corners {
@@ -27,6 +25,13 @@ figure {
   margin: 5px; /* adjust as needed */
 }
 
+.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center; /* Center text as well */
+}
 </style>
 
 # Our Members
@@ -34,9 +39,8 @@ figure {
 ## BAKER
 
 <figure>
-<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Baker.jpg"
-alt="Alt-text: Baker" class = "rounded-corners" />
-<figcaption aria-hidden="true">Alt-text: Baker Badge</figcaption>
+<img src="docs/imgs/Baker.jpg" alt="Baker" class="rounded-corners" />
+<figcaption>Alt-text: Baker Badge</figcaption>
 </figure>
 
 <br>
@@ -56,9 +60,8 @@ Visit their [website](https://www.bakermontana.us/)
 ## BELGRADE
 
 <figure>
-<img src="https://https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Belgrade.jpg"
-alt="Alt-text: Belgrade" class = "rounded-corners" />
-<figcaption aria-hidden="true">Alt-text: Belgrade Badge</figcaption>
+<img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Belgrade.jpg" alt="Belgrade" class="rounded-corners" />
+<figcaption>Alt-text: Belgrade Badge</figcaption>
 </figure>
 
 <br>
@@ -75,50 +78,23 @@ Visit their [website](https://www.belgrademt.gov/158/Police) and [CBA](https://w
 
 <hr>
 
-
-
-## Michelle Knopp
+## BILLINGS
 
 <figure>
-<img src="https://watts-college.github.io/project-paf-515-2025s-team-04/docs/imgs/knopp_photo.JPG"
-alt="Alt-text: Knopp icon" class = "rounded-corners" />
-<figcaption aria-hidden="true">Alt-text: Knopp photo</figcaption>
+<img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Billings.jpg" alt="Billings" class="rounded-corners" />
+<figcaption>Alt-text: Billings Badge</figcaption>
 </figure>
 
 <br>
 
-**Researched Census Division**: Mountain Division
+**County**: Yellowstone County
 
-**Degrees**: Arizona State University, B.S. Forensic Psychology, Pursuing M.S. Program Evaluation & Data Analytics
+**Population**: 117116
 
-**Career**: Currently Police Patrol Sergeant for Butte-SilverBow PD, seeking Program Evaluation career.
+**Agency Size**: 90 Officers
 
-**Hobby**: Enjoying traveling, cruising, running, hiking and hiking.
+**Collective Bargaining Agreement**: Yes
 
-Visit my [website](https://michelleann117.github.io/jekyll/) and Link to CBA [website](https://github.com/MichelleAnn117).
-
-<hr>
-
-## Drew Radovich
-
-<figure>
-<img src="https://watts-college.github.io/project-paf-515-2025s-team-04/docs/imgs/radovich_photo.jpg"
-alt="Alt-text: radovich icon" class = "rounded-corners" />
-<figcaption aria-hidden="true">Alt-text: radovich photo</figcaption>
-</figure>
-
-<br>
-
-**Researched Census Division**: Pacific Division
-
-**Degrees**: <i> Candidate for Master's in Program Evaluation and Data Analytics from Arizona State University </i>
-
-**Career**: Currently pursuing careers in data analytics. Retail and healthcare experience.
-
-**Hobby**: Soccer, coffee, traveling, and listening to music.
-
-Visit my [website](https://drewradovich.github.io/) and [GitHub](https://github.com/drewradovich).
+Visit their [website](https://www.billingsmt.gov/).
 
 <hr>
-
-
