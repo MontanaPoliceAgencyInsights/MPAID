@@ -1,9 +1,0 @@
-# main links
-main:
-  - title: "Introduction"
-    url: index
-  - title: "Members"
-    url: /docs/members/
-  - title: "Shiny Dashboard"
-    url: "https://runknopp.shinyapps.io/Dashboard/"
-
