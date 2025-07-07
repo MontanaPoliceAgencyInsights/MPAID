@@ -145,9 +145,9 @@ hr {
       <figure>
         <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Glasgow.jpg" alt="Glasgow" class="rounded-corners" />
       </figure>
-      <p><strong>County:</strong> Beaverhead</p>
-      <p><strong>Population:</strong> 3880</p>
-      <p><strong>Agency Size:</strong> 10 Officers</p>
+      <p><strong>County:</strong> Valley</p>
+      <p><strong>Population:</strong> 3202</p>
+      <p><strong>Agency Size:</strong> 6 Officers</p>
       <p><strong>CBA:</strong> Unknown</p>
       <p>Visit their <a href="https://www.cityofglasgowmt.com/services3">website</a>
     </div>
