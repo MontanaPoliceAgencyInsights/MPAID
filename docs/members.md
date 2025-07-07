@@ -187,5 +187,41 @@ hr {
       <p><strong>CBA:</strong> Yes</p>
       <p>Visit their <a href="https://cityofhamilton.net/departments/police_department/index.php">website</a> and <a href="https://montanapoliceagencyinsights.github.io/MPAID/docs/cbas/Hamilton.pdf">CBA</a></p>
     </div>
+    
+    <div>
+      <h2>HAVRE</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Havre.jpg" alt="Havre" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Hill</p>
+      <p><strong>Population:</strong> 9204</p>
+      <p><strong>Agency Size:</strong> 17 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://www.ci.havre.mt.us/police-department">website</a> and <a href="https://montanapoliceagencyinsights.github.io/MPAID/docs/cbas/Havre.pdf">CBA</a></p>
+    </div>
+    
+    <div>
+      <h2>HELENA</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Helena.jpg" alt="Helena" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Lewis & Clark</p>
+      <p><strong>Population:</strong> 34729</p>
+      <p><strong>Agency Size:</strong> 51 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://www.helenamt.gov/Departments/Police-Department">website</a> and <a href="https://montanapoliceagencyinsights.github.io/MPAID/docs/cbas/Helena.pdf">CBA</a></p>
+    </div>
+    
+    <div>
+      <h2>KALISPELL</h2>
+      <figure>
+        <img src="https://montanapoliceagencyinsights.github.io/MPAID/docs/imgs/Kalispell.jpg" alt="Kalispell" class="rounded-corners" />
+      </figure>
+      <p><strong>County:</strong> Flathead</p>
+      <p><strong>Population:</strong> 31296</p>
+      <p><strong>Agency Size:</strong> 53 Officers</p>
+      <p><strong>CBA:</strong> Yes</p>
+      <p>Visit their <a href="https://kalispell.com/260/Police">website</a> and <a href="https://montanapoliceagencyinsights.github.io/MPAID/docs/cbas/Kalispell.pdf">CBA</a></p>
+    </div>
   
 </div>
